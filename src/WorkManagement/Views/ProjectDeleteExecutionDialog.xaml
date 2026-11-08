@@ -133,19 +133,19 @@
                 <DockPanel Grid.Row="0" Margin="4,2,4,6">
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                         <materialDesign:PackIcon Kind="Console" Width="14" Height="14"
-                                                 Foreground="#00E676" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Nhật Ký Thực Thi (Console Log)" FontWeight="Bold" FontSize="11" Foreground="#EEEEEE"/>
+                                                 Foreground="{DynamicResource AppTerminalForegroundBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="Nhật Ký Thực Thi (Console Log)" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource AppTerminalForegroundBrush}"/>
                     </StackPanel>
                     <Button Style="{StaticResource MaterialDesignFlatButton}"
-                            DockPanel.Dock="Right" Padding="4,0" Height="20"
+                            DockPanel.Dock="Right" Padding="6,0" Height="24"
                             Click="BtnClearLog_Click" ToolTip="Xóa log trên màn hình">
-                        <TextBlock Text="Xóa Màn Hình" FontSize="10" Foreground="#AAAAAA"/>
+                        <TextBlock Text="Xóa Màn Hình" FontSize="10" Foreground="{DynamicResource AppTerminalForegroundBrush}" Opacity="0.75"/>
                     </Button>
                 </DockPanel>
 
                 <ScrollViewer x:Name="ScrollerLog" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <TextBox x:Name="TxtLogOutput" IsReadOnly="True" BorderThickness="0"
-                             Background="Transparent" Foreground="#EEEEEE"
+                             Background="Transparent" Foreground="{DynamicResource AppTerminalForegroundBrush}"
                              FontFamily="Consolas" FontSize="11.5"
                              TextWrapping="Wrap" Text="Sẵn sàng thực thi. Nhấn 'XÁC NHẬN &amp; XÓA DỰ ÁN' để bắt đầu...&#x0a;"/>
                 </ScrollViewer>

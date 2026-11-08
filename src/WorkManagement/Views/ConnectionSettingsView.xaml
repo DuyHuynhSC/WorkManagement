@@ -31,7 +31,7 @@
                               ToolTip="Chọn Profile đã lưu hoặc nhập tên Profile mới để lưu"/>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button x:Name="BtnNewProfile" Style="{StaticResource AppTealButtonStyle}"
+                        <Button x:Name="BtnNewProfile" Style="{StaticResource AppOutlinedButtonStyle}"
                                 Height="32" Padding="12,0" Margin="0,0,6,0" Click="BtnNewProfile_Click"
                                 ToolTip="Khởi tạo một Profile mới">
                             <StackPanel Orientation="Horizontal">
@@ -40,7 +40,7 @@
                             </StackPanel>
                         </Button>
 
-                        <Button x:Name="BtnSaveProfile" Style="{StaticResource AppTealButtonStyle}"
+                        <Button x:Name="BtnSaveProfile" Style="{StaticResource AppPrimaryButtonStyle}"
                                 Height="32" Padding="12,0" Margin="0,0,6,0" Click="BtnSaveProfile_Click"
                                 ToolTip="Lưu thông tin đang nhập vào Profile này">
                             <StackPanel Orientation="Horizontal">

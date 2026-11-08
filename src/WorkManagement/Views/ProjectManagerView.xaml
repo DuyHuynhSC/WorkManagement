@@ -16,102 +16,8 @@
         <!-- TOP TOOLBAR -->
         <Border Grid.Row="0" Style="{StaticResource AppSubtleToolbarBorderStyle}" Margin="0,0,0,10" Padding="12,10">
             <DockPanel LastChildFill="True">
-                <!-- Action Buttons (Left) -->
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                    <Button x:Name="BtnAddProject" Style="{StaticResource AppPrimaryButtonStyle}"
-                            Height="32" Padding="12,0" Margin="0,0,8,0" Click="BtnAddProject_Click"
-                            ToolTip="Thêm dự án mới vào danh sách">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FolderPlusOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="Thêm Dự Án" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnImportExcel" Style="{StaticResource AppSuccessButtonStyle}"
-                            Height="32" Padding="12,0" Margin="0,0,8,0" Click="BtnImportExcel_Click"
-                            ToolTip="Nhập danh sách dự án từ file Excel (.xlsx / .xls)">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FileExcelOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="Import Excel" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnExportExcel" Style="{StaticResource AppTealButtonStyle}"
-                            Height="32" Padding="12,0" Margin="0,0,8,0" Click="BtnExportExcel_Click"
-                            ToolTip="Xuất danh sách dự án hiện tại (hoặc danh sách đang lọc/chọn) ra file Excel (.xlsx)">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FileExportOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="Xuất Excel" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnDownloadTemplate" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,0,8,0" Click="BtnDownloadTemplate_Click"
-                            ToolTip="Xuất file mẫu Excel thông tin dự án để nhập liệu">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FileDownloadOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="File Mẫu" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnAutoFitColumns" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,0,8,0" Click="BtnAutoFitColumns_Click"
-                            ToolTip="Tự động căn chỉnh độ rộng các cột vừa khít nội dung">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="ArrowExpandHorizontal" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Auto-Fit Cột" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- NÚT XÓA DÒNG RA KHỎI GRID -->
-                    <Button x:Name="BtnDeleteSelectedRows" Style="{StaticResource AppDangerButtonStyle}"
-                            Height="32" Padding="12,0" Margin="0,0,8,0" Click="BtnDeleteSelectedRows_Click"
-                            ToolTip="Xóa các dòng dự án đang chọn ra khỏi grid (không xóa dữ liệu trên Server/Folder)">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Xóa Dòng" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- NÚT XÓA DỰ ÁN (XÓA TUẦN TỰ FOLDER + DB USER + TABLESPACE) -->
-                    <Button x:Name="BtnDeleteSelected" Style="{StaticResource AppDangerButtonStyle}"
-                            Height="32" Padding="12,0" Margin="0,0,8,0" Click="BtnDeleteSelected_Click"
-                            ToolTip="Xóa các dự án đang chọn (xóa tuần tự Source Folder, DB User, Tablespace kèm backup)">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="DeleteForeverOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Xóa Dự Án (Folder &amp; DB)" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnDeleteAll" Style="{StaticResource AppDangerButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,0,8,0" Click="BtnDeleteAll_Click"
-                            ToolTip="Dọn sạch danh sách quản lý dự án hiện tại">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="DeleteSweepOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Xóa Tất Cả" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnRefresh" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,0,8,0" Click="BtnRefresh_Click"
-                            ToolTip="Tải lại danh sách từ bộ nhớ">
-                        <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center"/>
-                    </Button>
-
-                    <Button x:Name="BtnClearAllFilters" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,0,8,0" Click="BtnClearAllFilters_Click"
-                            ToolTip="Xóa tất cả các bộ lọc cột đang áp dụng" Visibility="Collapsed">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FilterOffOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"
-                                                     Foreground="{DynamicResource AppDangerButtonBackground}"/>
-                            <TextBlock Text="Bỏ Lọc Cột" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"
-                                       Foreground="{DynamicResource AppDangerButtonBackground}"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-
                 <!-- Search Box (Right) -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,2,0,2">
                     <Border Background="{DynamicResource AppCardBackgroundBrush}"
                             BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
                             BorderThickness="1" CornerRadius="6" Padding="6,2" Width="280">
@@ -131,7 +37,7 @@
                                      TextChanged="TxtSearch_TextChanged"
                                      KeyDown="TxtSearch_KeyDown"/>
                             <Button x:Name="BtnClearSearch" Grid.Column="2" Style="{StaticResource MaterialDesignFlatButton}"
-                                     Width="20" Height="20" Padding="0" Margin="2,0,0,0"
+                                     Width="24" Height="24" Padding="0" Margin="2,0,0,0"
                                      Visibility="Collapsed" Click="BtnClearSearch_Click">
                                 <materialDesign:PackIcon Kind="CloseCircle" Width="14" Height="14"
                                                          Foreground="{DynamicResource AppSecondaryTextBrush}"/>
@@ -139,6 +45,102 @@
                         </Grid>
                     </Border>
                 </StackPanel>
+
+                <!-- Action Buttons (Left) -->
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BtnAddProject" Style="{StaticResource AppPrimaryButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnAddProject_Click"
+                            ToolTip="Thêm dự án mới vào danh sách">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FolderPlusOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Thêm Dự Án" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="BtnImportExcel" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnImportExcel_Click"
+                            ToolTip="Nhập danh sách dự án từ file Excel (.xlsx / .xls)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FileExcelOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Import Excel" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="BtnExportExcel" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnExportExcel_Click"
+                            ToolTip="Xuất danh sách dự án hiện tại (hoặc danh sách đang lọc/chọn) ra file Excel (.xlsx)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FileExportOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Xuất Excel" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="BtnDownloadTemplate" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnDownloadTemplate_Click"
+                            ToolTip="Xuất file mẫu Excel thông tin dự án để nhập liệu">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FileDownloadOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="File Mẫu" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="BtnAutoFitColumns" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnAutoFitColumns_Click"
+                            ToolTip="Tự động căn chỉnh độ rộng các cột vừa khít nội dung">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ArrowExpandHorizontal" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Auto-Fit Cột" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- NÚT XÓA DÒNG RA KHỎI GRID -->
+                    <Button x:Name="BtnDeleteSelectedRows" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnDeleteSelectedRows_Click"
+                            ToolTip="Xóa các dòng dự án đang chọn ra khỏi grid (không xóa dữ liệu trên Server/Folder)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Xóa Dòng" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- NÚT XÓA DỰ ÁN (XÓA TUẦN TỰ FOLDER + DB USER + TABLESPACE) -->
+                    <Button x:Name="BtnDeleteSelected" Style="{StaticResource AppDangerButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnDeleteSelected_Click"
+                            ToolTip="Xóa các dự án đang chọn (xóa tuần tự Source Folder, DB User, Tablespace kèm backup)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DeleteForeverOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Xóa Dự Án (Folder &amp; DB)" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="BtnDeleteAll" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnDeleteAll_Click"
+                            ToolTip="Dọn sạch danh sách quản lý dự án hiện tại">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DeleteSweepOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"
+                                                     Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                            <TextBlock Text="Xóa Tất Cả" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"
+                                       Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="BtnRefresh" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnRefresh_Click"
+                            ToolTip="Tải lại danh sách từ bộ nhớ">
+                        <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center"/>
+                    </Button>
+
+                    <Button x:Name="BtnClearAllFilters" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnClearAllFilters_Click"
+                            ToolTip="Xóa tất cả các bộ lọc cột đang áp dụng" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FilterOffOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"
+                                                     Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                            <TextBlock Text="Bỏ Lọc Cột" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"
+                                       Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
             </DockPanel>
         </Border>
 
@@ -205,9 +207,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_No" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="No" ToolTip="Lọc No">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="No" VerticalAlignment="Center"/>
@@ -220,9 +222,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_ProjectName" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="ProjectName" ToolTip="Lọc Project">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Project" VerticalAlignment="Center"/>
@@ -235,9 +237,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_Description" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="Description" ToolTip="Lọc Giải thích thêm">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Giải thích thêm" VerticalAlignment="Center"/>
@@ -250,9 +252,9 @@
                         <DataGridTemplateColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_SourceFolder" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="SourceFolder" ToolTip="Lọc Source Folder">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Source Folder" VerticalAlignment="Center"/>
@@ -263,13 +265,13 @@
                                 <DockPanel LastChildFill="True">
                                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
                                         <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                                Width="20" Height="20" Padding="0" Margin="2,0"
+                                                Width="24" Height="24" Padding="0" Margin="2,0"
                                                 Click="BtnOpenFolder_Click" ToolTip="Mở thư mục trong File Explorer">
                                             <materialDesign:PackIcon Kind="FolderOpenOutline" Width="13" Height="13"
                                                                      Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
                                         </Button>
                                         <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                                Width="20" Height="20" Padding="0"
+                                                Width="24" Height="24" Padding="0"
                                                 Click="BtnCopyFolder_Click" ToolTip="Sao chép đường dẫn">
                                             <materialDesign:PackIcon Kind="ContentCopy" Width="13" Height="13"
                                                                      Foreground="{DynamicResource AppSecondaryTextBrush}"/>
@@ -286,9 +288,9 @@
                         <DataGridTemplateColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_HostServer" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="HostServer" ToolTip="Lọc Host Server">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Host Server" VerticalAlignment="Center"/>
@@ -299,15 +301,15 @@
                                 <DockPanel LastChildFill="True">
                                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
                                         <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                                Width="22" Height="22" Padding="0" Margin="0,0,2,0"
+                                                Width="24" Height="24" Padding="0" Margin="0,0,2,0"
                                                 Click="BtnPlayHostRdp_Click" ToolTip="Mở Remote Desktop (RDP) dựa trên Quản lý máy ảo">
                                             <materialDesign:PackIcon Kind="Play" Width="14" Height="14"
-                                                                     Foreground="#2E7D32"/>
+                                                                     Foreground="{DynamicResource AppSuccessButtonBackground}"/>
                                         </Button>
                                         <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                                Width="20" Height="20" Padding="0"
+                                                Width="24" Height="24" Padding="0"
                                                 Click="BtnCopyHost_Click" ToolTip="Sao chép IP máy chủ">
-                                            <materialDesign:PackIcon Kind="ContentCopy" Width="12" Height="12"
+                                            <materialDesign:PackIcon Kind="ContentCopy" Width="13" Height="13"
                                                                      Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                         </Button>
                                     </StackPanel>
@@ -322,9 +324,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_ServiceName" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="ServiceName" ToolTip="Lọc Service Name">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Service Name" VerticalAlignment="Center"/>
@@ -344,9 +346,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_TnsName" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="TnsName" ToolTip="Lọc tnsname">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="tnsname" VerticalAlignment="Center"/>
@@ -359,9 +361,9 @@
                         <DataGridTemplateColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_DbUsers" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="DbUsers" ToolTip="Lọc DB Users">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="User (DB)" VerticalAlignment="Center"/>
@@ -371,9 +373,9 @@
                             <DataTemplate>
                                 <DockPanel LastChildFill="True">
                                     <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                            DockPanel.Dock="Right" Width="20" Height="20" Padding="0"
+                                            DockPanel.Dock="Right" Width="24" Height="24" Padding="0"
                                             Click="BtnCopyUsers_Click" ToolTip="Sao chép danh sách Users">
-                                        <materialDesign:PackIcon Kind="ContentCopy" Width="12" Height="12"
+                                        <materialDesign:PackIcon Kind="ContentCopy" Width="13" Height="13"
                                                                  Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                     </Button>
                                     <TextBlock Text="{Binding DbUsers}" FontFamily="Consolas" TextTrimming="CharacterEllipsis"
@@ -388,9 +390,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_Tablespace" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="Tablespace" ToolTip="Lọc Tablespace">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Tablespace Cần Xóa" VerticalAlignment="Center"/>
@@ -403,9 +405,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_PersonInCharge" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="PersonInCharge" ToolTip="Lọc Người phụ trách">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Người phụ trách" VerticalAlignment="Center"/>
@@ -418,9 +420,9 @@
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_Notes" Style="{StaticResource MaterialDesignFlatButton}"
-                                        DockPanel.Dock="Right" Width="18" Height="18" Padding="0" Margin="4,0,0,0"
+                                        DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
                                         Click="BtnColumnFilter_Click" Tag="Notes" ToolTip="Lọc Ghi chú">
-                                    <materialDesign:PackIcon Kind="FilterOutline" Width="11" Height="11"
+                                    <materialDesign:PackIcon Kind="FilterOutline" Width="12" Height="12"
                                                              Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 </Button>
                                 <TextBlock Text="Ghi chú" VerticalAlignment="Center"/>
@@ -485,7 +487,7 @@
                     <DockPanel Grid.Row="0" Margin="0,0,0,8">
                         <Button Style="{StaticResource MaterialDesignFlatButton}"
                                 DockPanel.Dock="Right" HorizontalAlignment="Right"
-                                Width="22" Height="22" Padding="0" Click="BtnCloseFilterPopup_Click">
+                                Width="24" Height="24" Padding="0" Click="BtnCloseFilterPopup_Click">
                             <materialDesign:PackIcon Kind="Close" Width="14" Height="14"
                                                      Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                         </Button>
@@ -505,27 +507,27 @@
                         <DockPanel>
                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                                 <Button x:Name="BtnSortAsc" Style="{StaticResource MaterialDesignFlatButton}"
-                                        Padding="5,0" Height="22" Margin="0,0,3,0" Click="BtnSortAsc_Click"
+                                        Padding="6,0" Height="24" Margin="0,0,3,0" Click="BtnSortAsc_Click"
                                         ToolTip="Sắp xếp tăng dần A-Z">
                                     <StackPanel Orientation="Horizontal">
-                                        <materialDesign:PackIcon Kind="SortAlphabeticalAscending" Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                        <materialDesign:PackIcon Kind="SortAlphabeticalAscending" Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,3,0"/>
                                         <TextBlock Text="A-Z" FontSize="11"/>
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="BtnSortDesc" Style="{StaticResource MaterialDesignFlatButton}"
-                                        Padding="5,0" Height="22" Click="BtnSortDesc_Click"
+                                        Padding="6,0" Height="24" Click="BtnSortDesc_Click"
                                         ToolTip="Sắp xếp giảm dần Z-A">
                                     <StackPanel Orientation="Horizontal">
-                                        <materialDesign:PackIcon Kind="SortAlphabeticalDescending" Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                        <materialDesign:PackIcon Kind="SortAlphabeticalDescending" Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,3,0"/>
                                         <TextBlock Text="Z-A" FontSize="11"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
                             <Button x:Name="BtnClearColumnFilter" Style="{StaticResource MaterialDesignFlatButton}"
-                                    Padding="5,0" Height="22" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                    Padding="6,0" Height="24" DockPanel.Dock="Right" HorizontalAlignment="Right"
                                     Click="BtnClearColumnFilter_Click" ToolTip="Xóa lọc trên cột này">
                                 <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="FilterOffOutline" Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,3,0"
+                                    <materialDesign:PackIcon Kind="FilterOffOutline" Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,3,0"
                                                              Foreground="{DynamicResource AppDangerButtonBackground}"/>
                                     <TextBlock Text="Bỏ lọc cột" FontSize="11" Foreground="{DynamicResource AppDangerButtonBackground}"/>
                                 </StackPanel>
@@ -553,9 +555,9 @@
                                      TextChanged="TxtFilterSearch_TextChanged"/>
                             <Button x:Name="BtnClearFilterSearch" Grid.Column="2"
                                     Style="{StaticResource MaterialDesignFlatButton}"
-                                    Width="16" Height="16" Padding="0" Visibility="Collapsed"
+                                    Width="24" Height="24" Padding="0" Visibility="Collapsed"
                                     Click="BtnClearFilterSearch_Click">
-                                <materialDesign:PackIcon Kind="CloseCircle" Width="12" Height="12"
+                                <materialDesign:PackIcon Kind="CloseCircle" Width="13" Height="13"
                                                          Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                             </Button>
                         </Grid>

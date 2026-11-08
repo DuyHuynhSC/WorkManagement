@@ -26,7 +26,7 @@
                                      Checked="TriggerType_Changed">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="LoginVariant" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"
-                                                         Foreground="{DynamicResource AppPrimaryBrush}"/>
+                                                         Foreground="{DynamicResource AppSectionIconBrush}"/>
                                 <TextBlock Text="Khi khởi động / đăng nhập Windows (Tự động delay 1 phút chờ mạng/VPN sẵn sàng)"
                                            FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>

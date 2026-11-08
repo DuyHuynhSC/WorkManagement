@@ -1,4 +1,4 @@
-﻿<Window x:Class="WorkManagement.Views.PromptDialogWindow"
+<Window x:Class="WorkManagement.Views.PromptDialogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -35,13 +35,13 @@
         <!-- Footer Buttons -->
         <Border Grid.Row="2" Style="{StaticResource AppDialogFooterBorderStyle}" Padding="14,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource AppPrimaryButtonStyle}"
-                        Height="32" Padding="16,0" Margin="0,0,8,0" Click="BtnOk_Click">
-                    <TextBlock Text="Đồng ý" FontWeight="SemiBold"/>
-                </Button>
                 <Button Style="{StaticResource AppOutlinedButtonStyle}"
-                        Height="32" Padding="14,0" Click="BtnCancel_Click">
+                        Height="32" Padding="14,0" Margin="0,0,8,0" IsCancel="True" Click="BtnCancel_Click">
                     <TextBlock Text="Hủy" FontWeight="SemiBold"/>
+                </Button>
+                <Button Style="{StaticResource AppPrimaryButtonStyle}"
+                        Height="32" Padding="16,0" IsDefault="True" Click="BtnOk_Click">
+                    <TextBlock Text="Đồng ý" FontWeight="SemiBold"/>
                 </Button>
             </StackPanel>
         </Border>

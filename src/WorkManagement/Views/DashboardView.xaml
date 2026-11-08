@@ -22,15 +22,6 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button x:Name="BtnOpenCommandPalette" Style="{StaticResource AppPrimaryButtonStyle}"
-                                Height="32" Padding="14,0" Margin="0,0,8,0" Click="BtnOpenCommandPalette_Click"
-                                ToolTip="Mở thanh tìm kiếm &amp; thực thi lệnh nhanh (Phím tắt: Ctrl + K)">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="ConsoleLine" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Command Palette (Ctrl + K)" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-
                         <Button x:Name="BtnRefreshDashboard" Style="{StaticResource AppOutlinedButtonStyle}"
                                 Height="32" Padding="12,0" Click="BtnRefreshDashboard_Click"
                                 ToolTip="Làm mới toàn bộ số liệu thống kê">
@@ -137,6 +128,23 @@
                                 <DataGridTextColumn Header="Trạng Thái" Binding="{Binding StatusText}" Width="*"/>
                             </DataGrid.Columns>
                         </DataGrid>
+
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count, ElementName=GridExpiringVms}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <materialDesign:PackIcon Kind="CheckDecagramOutline" Width="32" Height="32" HorizontalAlignment="Center"
+                                                     Foreground="{DynamicResource AppSecondaryTextBrush}" Opacity="0.45" Margin="0,0,0,6"/>
+                            <TextBlock Text="Không có máy ảo nào sắp hết hạn trong 14 ngày tới."
+                                       FontSize="12" Foreground="{DynamicResource AppSecondaryTextBrush}" HorizontalAlignment="Center"/>
+                        </StackPanel>
                     </Grid>
                 </materialDesign:Card>
 

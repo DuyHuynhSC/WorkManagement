@@ -70,7 +70,7 @@
                         </Button>
 
                         <!-- NAV 1: FTP CLEANER & MANAGER -->
-                        <Button x:Name="NavBtnFtp" Style="{StaticResource AppPrimaryButtonStyle}"
+                        <Button x:Name="NavBtnFtp" Style="{StaticResource AppNavButtonActiveStyle}"
                                 Height="40" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
                                 Click="NavBtnFtp_Click">
                             <StackPanel Orientation="Horizontal">
@@ -116,23 +116,23 @@
 
                         <!-- CONFIG FTP BUTTON -->
                         <Button x:Name="BtnOpenConnectionSettings" Style="{StaticResource AppNavButtonInactiveStyle}"
-                                Height="38" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
+                                Height="40" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
                                 Click="BtnOpenConnectionSettings_Click"
                                 ToolTip="Cấu hình Kết nối FTP, Proxy &amp; Thư mục sao lưu">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="TuneVariant" Width="17" Height="17" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBlock Text="Cấu Hình FTP" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="TuneVariant" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="Cấu Hình FTP" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
                         <!-- CONFIG EMAIL BUTTON -->
                         <Button x:Name="BtnEmailSettings" Style="{StaticResource AppNavButtonInactiveStyle}"
-                                Height="38" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
+                                Height="40" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
                                 Click="BtnEmailSettings_Click"
                                 ToolTip="Cấu hình SMTP và danh sách Email nhận báo cáo">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="EmailEditOutline" Width="17" Height="17" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBlock Text="Cấu Hình Email" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="EmailEditOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="Cấu Hình Email" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -183,7 +183,7 @@
 
                     <!-- Theme Switcher & Quick Command Palette (Right) -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button x:Name="BtnHeaderCommandPalette" Style="{StaticResource AppOutlinedButtonStyle}"
+                        <Button x:Name="BtnHeaderCommandPalette" Style="{StaticResource AppNavButtonInactiveStyle}"
                                 Height="30" Padding="10,0" Margin="0,0,10,0"
                                 Click="BtnHeaderCommandPalette_Click"
                                 ToolTip="Tìm nhanh Máy ảo, Dự án, Mở RDP hoặc Chuyển trang (Ctrl + K)">
@@ -193,7 +193,7 @@
                             </StackPanel>
                         </Button>
 
-                        <Button x:Name="BtnMinimizeToTray" Style="{StaticResource AppOutlinedButtonStyle}"
+                        <Button x:Name="BtnMinimizeToTray" Style="{StaticResource AppNavButtonInactiveStyle}"
                                 Height="30" Padding="10,0" Margin="0,0,10,0"
                                 Click="BtnMinimizeToTray_Click"
                                 ToolTip="Thu nhỏ ứng dụng chạy ngầm dưới Khay hệ thống (System Tray)">
@@ -278,7 +278,7 @@
                                                     </StackPanel>
                                                 </Button>
 
-                                                <Button x:Name="BtnSendPreviewEmail" Style="{StaticResource AppTealButtonStyle}"
+                                                <Button x:Name="BtnSendPreviewEmail" Style="{StaticResource AppOutlinedButtonStyle}"
                                                         Height="34" Padding="12,0" Margin="0,0,8,0" Click="BtnSendPreviewEmail_Click"
                                                         ToolTip="Gửi kết quả Xem trước qua Email cho danh sách thành viên">
                                                     <StackPanel Orientation="Horizontal">
@@ -348,6 +348,27 @@
                                                 <DataGridTextColumn Header="Trạng thái" Binding="{Binding Status}" Width="180" IsReadOnly="True"/>
                                             </DataGrid.Columns>
                                         </DataGrid>
+
+                                        <!-- Empty State Overlay -->
+                                        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Items.Count, ElementName=GridCandidates}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
+                                            <materialDesign:PackIcon Kind="FolderSearchOutline" Width="36" Height="36"
+                                                                     Foreground="{DynamicResource AppSecondaryTextBrush}" Opacity="0.45"
+                                                                     HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                            <TextBlock Text="Chưa có dữ liệu quét (Nhấn '1. Quét Tìm Dữ Liệu' để kiểm tra các thư mục FTP)"
+                                                       FontSize="12" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource AppSecondaryTextBrush}" Opacity="0.7"
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Grid>
                             </TabItem>
@@ -449,7 +470,7 @@
 
                                         <DockPanel Grid.Row="0">
                                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                                                <Button x:Name="BtnFmUploadFile" Style="{StaticResource AppSuccessButtonStyle}"
+                                                <Button x:Name="BtnFmUploadFile" Style="{StaticResource AppPrimaryButtonStyle}"
                                                         Height="32" Padding="12,0" Margin="0,0,6,0" Click="BtnFmUploadFile_Click"
                                                         ToolTip="Tải một hoặc nhiều file từ máy tính lên FTP">
                                                     <StackPanel Orientation="Horizontal">
@@ -458,7 +479,7 @@
                                                     </StackPanel>
                                                 </Button>
 
-                                                <Button x:Name="BtnFmUploadFolder" Style="{StaticResource AppSuccessButtonStyle}"
+                                                <Button x:Name="BtnFmUploadFolder" Style="{StaticResource AppOutlinedButtonStyle}"
                                                         Height="32" Padding="12,0" Margin="0,0,6,0" Click="BtnFmUploadFolder_Click"
                                                         ToolTip="Tải nguyên thư mục từ máy tính lên FTP">
                                                     <StackPanel Orientation="Horizontal">
@@ -467,7 +488,7 @@
                                                     </StackPanel>
                                                 </Button>
 
-                                                <Button x:Name="BtnFmDownload" Style="{StaticResource AppPrimaryButtonStyle}"
+                                                <Button x:Name="BtnFmDownload" Style="{StaticResource AppOutlinedButtonStyle}"
                                                         Height="32" Padding="12,0" Margin="0,0,6,0" Click="BtnFmDownload_Click"
                                                         ToolTip="Tải các file/thư mục được chọn về máy tính">
                                                     <StackPanel Orientation="Horizontal">
@@ -585,7 +606,7 @@
                                                 <Separator/>
                                                 <MenuItem Header="Xóa Khỏi FTP (Delete)" Click="CtxFmDelete_Click">
                                                     <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="#D32F2F"/>
+                                                        <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{DynamicResource AppDangerButtonBackground}"/>
                                                     </MenuItem.Icon>
                                                 </MenuItem>
                                                 <MenuItem Header="Làm Mới (Refresh)" Click="CtxFmRefresh_Click">

@@ -3,10 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="Thông Tin Dự Án"
-        Height="640" Width="680" MinHeight="580" MinWidth="600"
+        Height="660" Width="680" MinHeight="580" MinWidth="600"
         WindowStartupLocation="CenterOwner"
         Style="{StaticResource AppWindowStyle}">
-    <Grid Margin="16">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -14,192 +14,198 @@
         </Grid.RowDefinitions>
 
         <!-- HEADER -->
-        <Border Grid.Row="0" Margin="0,0,0,12" Padding="0,0,0,8" BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Style="{StaticResource AppHeaderBannerStyle}" Padding="16,12">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <materialDesign:PackIcon Kind="FolderZipOutline" Width="24" Height="24"
-                                         Foreground="{DynamicResource AppPrimaryButtonBackground}"
+                <materialDesign:PackIcon Kind="FolderZipOutline" Width="26" Height="26"
                                          VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="TxtDialogTitle" Text="Thêm Dự Án Mới" FontSize="16" FontWeight="Bold"
-                               Foreground="{DynamicResource AppPrimaryTextBrush}"/>
+                    <TextBlock x:Name="TxtDialogTitle" Text="Thêm Dự Án Mới" FontSize="16" FontWeight="Bold"/>
                     <TextBlock Text="Khai báo thông tin dự án, thư mục source và thông số kết nối Oracle Database"
-                               FontSize="11" Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                               FontSize="11" Opacity="0.85"/>
                 </StackPanel>
             </StackPanel>
         </Border>
 
         <!-- FORM BODY -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16,12">
             <StackPanel>
                 <!-- THÔNG TIN CHUNG DỰ ÁN -->
-                <TextBlock Text="1. THÔNG TIN DỰ ÁN &amp; SOURCE FOLDER" FontWeight="Bold" FontSize="12"
-                           Foreground="{DynamicResource AppPrimaryButtonBackground}" Margin="0,0,0,10"/>
-
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="140"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBox x:Name="TxtNo" Grid.Column="0" Margin="0,0,10,0"
-                             materialDesign:HintAssist.Hint="No / STT"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                    <TextBox x:Name="TxtProjectName" Grid.Column="1" Margin="0,0,10,0"
-                             materialDesign:HintAssist.Hint="Tên Dự Án (Project) *" FontWeight="Bold"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                    <TextBox x:Name="TxtPersonInCharge" Grid.Column="2"
-                             materialDesign:HintAssist.Hint="Người phụ trách (PIC)"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-                </Grid>
-
-                <TextBox x:Name="TxtDescription" Margin="0,0,0,12"
-                         materialDesign:HintAssist.Hint="Giải thích thêm (Version - Mục đích)"
-                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                <!-- SOURCE FOLDER (NETWORK DRIVE) -->
-                <Grid Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBox x:Name="TxtSourceFolder" Grid.Column="0" Margin="0,0,8,0"
-                             materialDesign:HintAssist.Hint="Source Folder (Ổ mạng, ví dụ: Q:\V10_UTG) *"
-                             FontFamily="Consolas"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                    <Button x:Name="BtnBrowseFolder" Grid.Column="1" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" VerticalAlignment="Bottom" Click="BtnBrowseFolder_Click"
-                            ToolTip="Chọn thư mục trên máy tính hoặc ổ mạng">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="Browse..." VerticalAlignment="Center" FontSize="11.5"/>
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
-                <!-- THÔNG TIN ORACLE DATABASE -->
-                <TextBlock Text="2. KẾT NỐI ORACLE DATABASE (MÁY ẢO QUẢN LÝ)" FontWeight="Bold" FontSize="12"
-                           Foreground="{DynamicResource AppPrimaryButtonBackground}" Margin="0,4,0,10"/>
-
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="80"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <ComboBox x:Name="CmbHostServer" Grid.Column="0" Margin="0,0,10,0" IsEditable="True"
-                              materialDesign:HintAssist.Hint="Host Server (IP) *"
-                              SelectionChanged="CmbHostServer_SelectionChanged"
-                              Style="{StaticResource MaterialDesignFloatingHintComboBox}"/>
-
-                    <TextBox x:Name="TxtServiceName" Grid.Column="1" Margin="0,0,10,0" Text="ORCL"
-                             materialDesign:HintAssist.Hint="Service Name / SID"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                    <TextBox x:Name="TxtPort" Grid.Column="2" Margin="0,0,10,0" Text="1521"
-                             materialDesign:HintAssist.Hint="Port"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                    <TextBox x:Name="TxtTnsName" Grid.Column="3"
-                             materialDesign:HintAssist.Hint="tnsname (tham khảo)"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-                </Grid>
-
-                <!-- DB USERS & TABLESPACE -->
-                <TextBox x:Name="TxtDbUsers" Margin="0,0,0,10"
-                         materialDesign:HintAssist.Hint="Danh sách DB User cần quản lý / xóa (phân cách bởi dấu phẩy ,) *"
-                         TextWrapping="Wrap" AcceptsReturn="True" MaxHeight="60"
-                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                <TextBox x:Name="TxtTablespace" Margin="0,0,0,12"
-                         materialDesign:HintAssist.Hint="Tên Tablespace cần xóa (ví dụ: TS_UTSUGI) *"
-                         FontWeight="SemiBold"
-                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-
-                <!-- TÀI KHOẢN DBA DÙNG ĐỂ THỰC THI XÓA -->
-                <Border Background="{DynamicResource AppSubtlePanelBackgroundBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,12">
+                <materialDesign:Card Padding="14,12" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="Tài khoản quản trị Oracle (DBA) để thực thi xóa User &amp; Tablespace:"
-                                   FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AppPrimaryTextBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="1. THÔNG TIN DỰ ÁN &amp; SOURCE FOLDER" FontWeight="Bold" FontSize="12"
+                                   Foreground="{DynamicResource AppSecondaryTextBrush}" Margin="0,0,0,10"/>
 
-                        <Grid>
+                        <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="140"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="TxtNo" Grid.Column="0" Margin="0,0,10,0"
+                                     materialDesign:HintAssist.Hint="No / STT"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                            <TextBox x:Name="TxtProjectName" Grid.Column="1" Margin="0,0,10,0"
+                                     materialDesign:HintAssist.Hint="Tên Dự Án (Project) *" FontWeight="Bold"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                            <TextBox x:Name="TxtPersonInCharge" Grid.Column="2"
+                                     materialDesign:HintAssist.Hint="Người phụ trách (PIC)"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+                        </Grid>
+
+                        <TextBox x:Name="TxtDescription" Margin="0,0,0,12"
+                                 materialDesign:HintAssist.Hint="Giải thích thêm (Version - Mục đích)"
+                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                        <!-- SOURCE FOLDER (NETWORK DRIVE) -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox x:Name="TxtDbaUsername" Grid.Column="0" Margin="0,0,10,0" Text="SYSTEM"
-                                     materialDesign:HintAssist.Hint="DBA User (SYSTEM / SYS) *"
+                            <TextBox x:Name="TxtSourceFolder" Grid.Column="0" Margin="0,0,8,0"
+                                     materialDesign:HintAssist.Hint="Source Folder (Ổ mạng, ví dụ: Q:\V10_UTG) *"
+                                     FontFamily="Consolas"
                                      Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
 
-                            <Grid Grid.Column="1" Margin="0,0,10,0">
-                                <PasswordBox x:Name="PbDbaPassword"
-                                             materialDesign:HintAssist.Hint="Mật khẩu DBA *"
-                                             Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
-                                <TextBox x:Name="TxtDbaPasswordRevealed" Visibility="Collapsed"
-                                         materialDesign:HintAssist.Hint="Mật khẩu DBA *"
-                                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-                            </Grid>
-
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom">
-                                <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                        Width="28" Height="28" Padding="0" Margin="0,0,6,2"
-                                        Click="BtnToggleDbaPassword_Click" ToolTip="Ẩn / Hiện mật khẩu DBA">
-                                    <materialDesign:PackIcon x:Name="IconDbaPassEye" Kind="EyeOutline" Width="16" Height="16"/>
-                                </Button>
-
-                                <Button x:Name="BtnTestDbConnection" Style="{StaticResource AppOutlinedButtonStyle}"
-                                        Height="30" Padding="8,0" Click="BtnTestDbConnection_Click"
-                                        ToolTip="Thử nghiệm kết nối tới Oracle Database với thông tin đã nhập">
-                                    <StackPanel Orientation="Horizontal">
-                                        <materialDesign:PackIcon Kind="DatabaseCheckOutline" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                        <TextBlock Text="Test Kết Nối" VerticalAlignment="Center" FontSize="11"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                            <Button x:Name="BtnBrowseFolder" Grid.Column="1" Style="{StaticResource AppOutlinedButtonStyle}"
+                                    Height="32" Padding="10,0" VerticalAlignment="Bottom" Click="BtnBrowseFolder_Click"
+                                    ToolTip="Chọn thư mục trên máy tính hoặc ổ mạng">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Browse..." VerticalAlignment="Center" FontSize="11.5"/>
+                                </StackPanel>
+                            </Button>
                         </Grid>
                     </StackPanel>
-                </Border>
+                </materialDesign:Card>
 
-                <!-- GHI CHÚ -->
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                <!-- THÔNG TIN ORACLE DATABASE -->
+                <materialDesign:Card Padding="14,12" Margin="0,0,0,4">
+                    <StackPanel>
+                        <TextBlock Text="2. KẾT NỐI ORACLE DATABASE (MÁY ẢO QUẢN LÝ)" FontWeight="Bold" FontSize="12"
+                                   Foreground="{DynamicResource AppSecondaryTextBrush}" Margin="0,0,0,10"/>
 
-                    <TextBox x:Name="TxtNotes" Grid.Column="0" Margin="0,0,10,0"
-                             materialDesign:HintAssist.Hint="Ghi chú"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                    <TextBox x:Name="TxtNotes2" Grid.Column="1"
-                             materialDesign:HintAssist.Hint="Ghi chú 2"
-                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-                </Grid>
+                            <ComboBox x:Name="CmbHostServer" Grid.Column="0" Margin="0,0,10,0" IsEditable="True"
+                                      materialDesign:HintAssist.Hint="Host Server (IP) *"
+                                      SelectionChanged="CmbHostServer_SelectionChanged"
+                                      Style="{StaticResource MaterialDesignFloatingHintComboBox}"/>
+
+                            <TextBox x:Name="TxtServiceName" Grid.Column="1" Margin="0,0,10,0" Text="ORCL"
+                                     materialDesign:HintAssist.Hint="Service Name / SID"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                            <TextBox x:Name="TxtPort" Grid.Column="2" Margin="0,0,10,0" Text="1521"
+                                     materialDesign:HintAssist.Hint="Port"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                            <TextBox x:Name="TxtTnsName" Grid.Column="3"
+                                     materialDesign:HintAssist.Hint="tnsname (tham khảo)"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+                        </Grid>
+
+                        <!-- DB USERS & TABLESPACE -->
+                        <TextBox x:Name="TxtDbUsers" Margin="0,0,0,10"
+                                 materialDesign:HintAssist.Hint="Danh sách DB User cần quản lý / xóa (phân cách bởi dấu phẩy ,) *"
+                                 TextWrapping="Wrap" AcceptsReturn="True" MaxHeight="60"
+                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                        <TextBox x:Name="TxtTablespace" Margin="0,0,0,12"
+                                 materialDesign:HintAssist.Hint="Tên Tablespace cần xóa (ví dụ: TS_UTSUGI) *"
+                                 FontWeight="SemiBold"
+                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                        <!-- TÀI KHOẢN DBA DÙNG ĐỂ THỰC THI XÓA -->
+                        <Border Background="{DynamicResource AppSubtlePanelBackgroundBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Tài khoản quản trị Oracle (DBA) để thực thi xóa User &amp; Tablespace:"
+                                           FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AppPrimaryTextBrush}" Margin="0,0,0,8"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBox x:Name="TxtDbaUsername" Grid.Column="0" Margin="0,0,10,0" Text="SYSTEM"
+                                             materialDesign:HintAssist.Hint="DBA User (SYSTEM / SYS) *"
+                                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                                    <Grid Grid.Column="1" Margin="0,0,10,0">
+                                        <PasswordBox x:Name="PbDbaPassword"
+                                                     materialDesign:HintAssist.Hint="Mật khẩu DBA *"
+                                                     Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
+                                        <TextBox x:Name="TxtDbaPasswordRevealed" Visibility="Collapsed"
+                                                 materialDesign:HintAssist.Hint="Mật khẩu DBA *"
+                                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+                                    </Grid>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom">
+                                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                                Width="28" Height="28" Padding="0" Margin="0,0,6,2"
+                                                Click="BtnToggleDbaPassword_Click" ToolTip="Ẩn / Hiện mật khẩu DBA">
+                                            <materialDesign:PackIcon x:Name="IconDbaPassEye" Kind="EyeOutline" Width="16" Height="16"/>
+                                        </Button>
+
+                                        <Button x:Name="BtnTestDbConnection" Style="{StaticResource AppOutlinedButtonStyle}"
+                                                Height="30" Padding="8,0" Click="BtnTestDbConnection_Click"
+                                                ToolTip="Thử nghiệm kết nối tới Oracle Database với thông tin đã nhập">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="DatabaseCheckOutline" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                <TextBlock Text="Test Kết Nối" VerticalAlignment="Center" FontSize="11"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- GHI CHÚ -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="TxtNotes" Grid.Column="0" Margin="0,0,10,0"
+                                     materialDesign:HintAssist.Hint="Ghi chú"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                            <TextBox x:Name="TxtNotes2" Grid.Column="1"
+                                     materialDesign:HintAssist.Hint="Ghi chú 2"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+                        </Grid>
+                    </StackPanel>
+                </materialDesign:Card>
             </StackPanel>
         </ScrollViewer>
 
         <!-- FOOTER BUTTONS -->
-        <Border Grid.Row="2" Margin="0,12,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="0,1,0,0">
+        <Border Grid.Row="2" Style="{StaticResource AppDialogFooterBorderStyle}" Padding="16,12">
             <DockPanel LastChildFill="True">
                 <TextBlock x:Name="TxtStatusMessage" Text="" VerticalAlignment="Center" FontSize="11"
                            Foreground="{DynamicResource AppSecondaryTextBrush}"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="14,0" Margin="0,0,8,0" IsCancel="True"
+                            Height="34" Padding="14,0" Margin="0,0,8,0" IsCancel="True"
                             Content="Hủy Bỏ" Click="BtnCancel_Click"/>
                     <Button x:Name="BtnSave" Style="{StaticResource AppPrimaryButtonStyle}"
-                            Height="32" Padding="18,0" Click="BtnSave_Click">
+                            Height="34" Padding="18,0" IsDefault="True" Click="BtnSave_Click">
                         <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Check" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <materialDesign:PackIcon Kind="Check" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBlock Text="Lưu Dự Án" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
