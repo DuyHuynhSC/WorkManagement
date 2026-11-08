@@ -180,4 +180,30 @@ public class SecretProtectorTests
             if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public void VmManagerService_PreservesIsFavoriteFlag_ForQuickSearchFilter()
+    {
+        string tempFile = Path.Combine(Path.GetTempPath(), $"vm_fav_test_{Guid.NewGuid():N}.json");
+        try
+        {
+            var service = new VmManagerService(tempFile);
+            var vms = new List<VirtualMachineEntry>
+            {
+                new() { Ip = "10.0.0.1", MachineName = "FAV-VM", IsFavorite = true },
+                new() { Ip = "10.0.0.2", MachineName = "NORMAL-VM", IsFavorite = false }
+            };
+
+            service.SaveAll(vms);
+            var loaded = service.LoadAll();
+
+            Assert.Equal(2, loaded.Count);
+            Assert.True(loaded[0].IsFavorite);
+            Assert.False(loaded[1].IsFavorite);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
 }

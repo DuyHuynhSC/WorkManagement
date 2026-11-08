@@ -21,6 +21,7 @@ public class VirtualMachineEntry : INotifyPropertyChanged
     private string _tester = string.Empty;
     private string _notes = string.Empty;
     private string _expirationDate = "Vô hạn";
+    private bool _isFavorite;
     private bool _isPasswordMasked = true;
     private bool _isSelected;
 
@@ -108,6 +109,12 @@ public class VirtualMachineEntry : INotifyPropertyChanged
         set => SetField(ref _expirationDate, value);
     }
 
+    public bool IsFavorite
+    {
+        get => _isFavorite;
+        set => SetField(ref _isFavorite, value);
+    }
+
     public bool IsPasswordMasked
     {
         get => _isPasswordMasked;
@@ -149,6 +156,7 @@ public class VirtualMachineEntry : INotifyPropertyChanged
             Tester = Tester,
             Notes = Notes,
             ExpirationDate = ExpirationDate,
+            IsFavorite = IsFavorite,
             IsPasswordMasked = IsPasswordMasked,
             IsSelected = IsSelected
         };

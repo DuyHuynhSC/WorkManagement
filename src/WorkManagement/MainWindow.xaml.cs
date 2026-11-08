@@ -1543,22 +1543,22 @@ public partial class MainWindow : Window
             }
         };
 
-        // Thêm toàn bộ Máy ảo để gõ IP/Tên máy -> Enter là mở RDP ngay
+        // Chỉ thêm các Máy ảo được đánh dấu Yêu thích (Ngôi sao - IsFavorite = true) vào Tìm Nhanh (Ctrl + K)
         try
         {
             var vmService = new VmManagerService();
             var rdpService = new RemoteDesktopService(_logger);
-            foreach (var vm in vmService.LoadAll())
+            foreach (var vm in vmService.LoadAll().Where(v => v.IsFavorite))
             {
                 if (string.IsNullOrWhiteSpace(vm.Ip)) continue;
                 var capturedVm = vm;
                 items.Add(new CommandPaletteItem
                 {
-                    Title = $"Kết nối RDP: {capturedVm.MachineName} ({capturedVm.Ip})",
+                    Title = $"★ Kết nối RDP: {capturedVm.MachineName} ({capturedVm.Ip})",
                     Subtitle = $"User: {capturedVm.Username} | OS: {capturedVm.Os} | DB: {capturedVm.DatabaseName} ({capturedVm.Tns}) | KT: {capturedVm.Tester}",
-                    CategoryBadge = "MỞ RDP NGAY",
+                    CategoryBadge = "MÁY ẢO YÊU THÍCH",
                     IconKind = PackIconKind.RemoteDesktop,
-                    SearchKeywords = $"rdp {capturedVm.Ip} {capturedVm.MachineName} {capturedVm.DatabaseName} {capturedVm.Tns} {capturedVm.Tester}",
+                    SearchKeywords = $"rdp favorite yeu thich {capturedVm.Ip} {capturedVm.MachineName} {capturedVm.DatabaseName} {capturedVm.Tns} {capturedVm.Tester}",
                     ExecuteAction = async () => await rdpService.ConnectAsync(capturedVm)
                 });
             }

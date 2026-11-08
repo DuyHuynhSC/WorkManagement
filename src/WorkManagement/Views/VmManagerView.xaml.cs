@@ -162,6 +162,10 @@ public partial class VmManagerView : UserControl
             {
                 col.Width = new DataGridLength(60);
             }
+            else if (col.Header is MaterialDesignThemes.Wpf.PackIcon)
+            {
+                col.Width = new DataGridLength(48);
+            }
             else if (header == "Play")
             {
                 col.Width = new DataGridLength(85);
@@ -736,6 +740,16 @@ public partial class VmManagerView : UserControl
         if (sender is Button btn && btn.DataContext is VirtualMachineEntry entry)
         {
             await ConnectToVmAsync(entry);
+        }
+    }
+
+    private void BtnToggleFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is Button btn && btn.DataContext is VirtualMachineEntry entry)
+        {
+            entry.IsFavorite = !entry.IsFavorite;
+            _vmService.SaveAll(_allEntries);
         }
     }
 

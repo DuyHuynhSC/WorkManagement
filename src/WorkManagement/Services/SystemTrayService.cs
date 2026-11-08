@@ -219,24 +219,24 @@ public sealed class SystemTrayService : IDisposable
         try
         {
             var vmService = new VmManagerService();
-            var vms = vmService.LoadAll().Where(v => !string.IsNullOrWhiteSpace(v.Ip)).ToList();
-            if (vms.Count == 0)
+            var favVms = vmService.LoadAll().Where(v => v.IsFavorite && !string.IsNullOrWhiteSpace(v.Ip)).ToList();
+            if (favVms.Count == 0)
             {
                 itemRdpRoot.Items.Add(new MenuItem
                 {
-                    Header = "(Chưa có máy ảo nào)",
+                    Header = "(Chưa chọn sao ★ máy ảo yêu thích nào)",
                     IsEnabled = false
                 });
             }
             else
             {
                 var rdpService = new RemoteDesktopService(_logger);
-                foreach (var vm in vms.Take(15))
+                foreach (var vm in favVms)
                 {
                     var capturedVm = vm;
                     string label = string.IsNullOrWhiteSpace(capturedVm.MachineName)
-                        ? capturedVm.Ip
-                        : $"{capturedVm.MachineName} ({capturedVm.Ip})";
+                        ? $"★ {capturedVm.Ip}"
+                        : $"★ {capturedVm.MachineName} ({capturedVm.Ip})";
 
                     var vmItem = CreateMenuItem(
                         label,

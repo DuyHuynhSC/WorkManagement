@@ -25,7 +25,7 @@
   - **Nhật ký hoạt động (Audit Log Viewer):** Xem trực tiếp 150 dòng nhật ký mới nhất kèm bộ lọc chỉ xem lỗi (`[ERR]`).
 - **Command Palette Toàn Cục (`Ctrl + K` / `Ctrl + Alt + K`):**
   - Nhấn `Ctrl + K` ở bất kỳ màn hình nào (hoặc nhấn từ bất kỳ đâu trên Windows khi ứng dụng đang thu nhỏ dưới **System Tray**) để mở thanh tìm kiếm trung tâm.
-  - Gõ tên máy ảo hoặc IP $\rightarrow$ nhấn `Enter` để mở thẳng **Remote Desktop (RDP)** mà không cần bật cửa sổ chính.
+  - Chỉ hiển thị các **Máy ảo Yêu thích (được gắn ngôi sao ★)** trong danh sách Tìm Nhanh giúp bảng tìm kiếm luôn gọn gàng; gõ tên máy ảo hoặc IP $\rightarrow$ nhấn `Enter` để mở thẳng **Remote Desktop (RDP)**.
   - Gõ tên dự án $\rightarrow$ nhấn `Enter` để mở ngay thư mục Source Code trong Windows Explorer.
 - **Chạy Ngầm Dưới Khay Hệ Thống (System Tray / Notification Area):**
   - Nút **"Ẩn xuống Tray"** trên thanh tiêu đề hoặc tự động thu nhỏ xuống System Tray khi bấm nút Đóng (`X`).
@@ -37,6 +37,7 @@
 
 ### 1.3. Quản Lý Máy Ảo & Kết Nối Remote Desktop (VMs & RDP Hub)
 - **Danh mục máy ảo chi tiết:** Quản lý đầy đủ các trường thông tin: *STT, Địa chỉ IP, Tên máy, Domain/Workgroup, Hệ điều hành (OS), User, Password, TNS, Database Name, Oracle Version, Người kiểm tra, Ghi chú, Ngày hết hạn*.
+- **Đánh dấu Máy ảo Yêu thích (Ngôi sao ★ - Favorite VM):** Nằm ngay giữa cột CheckBox và nút Play; khi tích chọn ngôi sao vàng (`IsFavorite`), máy ảo đó sẽ xuất hiện trong **Tìm Nhanh (`Ctrl + K`)** và menu kết nối nhanh dưới **System Tray** (các máy ảo không gắn sao sẽ được ẩn khỏi Tìm Nhanh để tránh làm rối danh sách).
 - **Kết nối RDP 1-click (Nút Play):**
   - Tự động nạp thông tin đăng nhập vào Windows Credential (`cmdkey`) theo chuẩn định dạng `[Tên máy]\[User]` (ví dụ: `D2-SVR15-6016\Administrator`) và khởi chạy `mstsc.exe` kết nối tới IP đích mà không cần nhập lại mật khẩu.
 - **Import Đa Sheet Thông Minh & Xuất Danh Sách Ra Excel (`Export Excel`):**

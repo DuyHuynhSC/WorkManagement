@@ -202,6 +202,54 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
+                    <!-- FAVORITE STAR COLUMN (GIỮA CHECKBOX VÀ NÚT PLAY) -->
+                    <DataGridTemplateColumn Width="48" MinWidth="44" MaxWidth="56" CanUserResize="False">
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource MaterialDesignDataGridColumnHeader}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
+                        <DataGridTemplateColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource MaterialDesignDataGridCell}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </DataGridTemplateColumn.CellStyle>
+                        <DataGridTemplateColumn.Header>
+                            <materialDesign:PackIcon Kind="Star" Width="17" Height="17"
+                                                     Foreground="#F59E0B"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     ToolTip="Máy ảo Yêu thích (Tích chọn sao để hiển thị trong Tìm Nhanh Ctrl + K)"/>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                        Width="32" Height="28" Padding="0"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Click="BtnToggleFavorite_Click" Cursor="Hand"
+                                        ToolTip="Đánh dấu / Bỏ đánh dấu Máy ảo Yêu thích (Hiển thị trong Tìm Nhanh Ctrl + K)">
+                                    <materialDesign:PackIcon Width="19" Height="19" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <materialDesign:PackIcon.Style>
+                                            <Style TargetType="materialDesign:PackIcon">
+                                                <Setter Property="Kind" Value="StarOutline"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}"/>
+                                                <Setter Property="Opacity" Value="0.6"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                        <Setter Property="Kind" Value="Star"/>
+                                                        <Setter Property="Foreground" Value="#F59E0B"/>
+                                                        <Setter Property="Opacity" Value="1.0"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </materialDesign:PackIcon.Style>
+                                    </materialDesign:PackIcon>
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
                     <!-- PLAY (CONNECT RDP) BUTTON -->
                     <DataGridTemplateColumn Header="Play" Width="85" MinWidth="85">
                         <DataGridTemplateColumn.CellTemplate>
