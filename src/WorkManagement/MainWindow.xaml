@@ -54,9 +54,9 @@
                 </Border>
 
                 <!-- DOCK NAVIGATION MENU ITEMS -->
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="10,12">
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="10,0">
                     <StackPanel>
-                        <TextBlock Text="CHỨC NĂNG CHÍNH" FontSize="10" FontWeight="Bold" Margin="10,0,0,8"
+                        <TextBlock Text="CHỨC NĂNG CHÍNH" FontSize="10" FontWeight="Bold" Margin="10,16,0,10"
                                    Foreground="{DynamicResource AppHeaderForegroundBrush}" Opacity="0.7"/>
 
                         <!-- NAV 0: DASHBOARD & AUDIT -->
@@ -109,9 +109,9 @@
                             </StackPanel>
                         </Button>
 
-                        <Separator Margin="6,0,6,12" Background="{DynamicResource AppHeaderPillBorderBrush}"/>
+                        <Separator Margin="6,2,6,14" Background="{DynamicResource AppHeaderPillBorderBrush}"/>
 
-                        <TextBlock Text="CẤU HÌNH &amp; KẾT NỐI" FontSize="10" FontWeight="Bold" Margin="10,0,0,8"
+                        <TextBlock Text="CẤU HÌNH &amp; KẾT NỐI" FontSize="10" FontWeight="Bold" Margin="10,4,0,10"
                                    Foreground="{DynamicResource AppHeaderForegroundBrush}" Opacity="0.7"/>
 
                         <!-- CONFIG FTP BUTTON -->
