@@ -204,6 +204,40 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
+                    <!-- EDIT BUTTON COLUMN (GIỮA CHECKBOX VÀ FAVORITE) -->
+                    <DataGridTemplateColumn Width="48" MinWidth="44" MaxWidth="56" CanUserResize="False">
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource MaterialDesignDataGridColumnHeader}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
+                        <DataGridTemplateColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource MaterialDesignDataGridCell}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </DataGridTemplateColumn.CellStyle>
+                        <DataGridTemplateColumn.Header>
+                            <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16"
+                                                     Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     ToolTip="Chỉnh sửa máy ảo"/>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                        Width="32" Height="28" Padding="0"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Click="BtnEdit_Click" ToolTip="Chỉnh sửa máy ảo" Cursor="Hand">
+                                    <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16"
+                                                             Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+
                     <!-- FAVORITE STAR COLUMN (GIỮA CHECKBOX VÀ NÚT PLAY) -->
                     <DataGridTemplateColumn Width="48" MinWidth="44" MaxWidth="56" CanUserResize="False">
                         <DataGridTemplateColumn.HeaderStyle>
@@ -483,28 +517,6 @@
                             </DockPanel>
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
-
-                    <!-- EDIT & DELETE BUTTONS -->
-                    <DataGridTemplateColumn Header="Thao Tác" Width="85" MinWidth="85">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                            Width="24" Height="24" Padding="0" Margin="0,0,4,0"
-                                            Click="BtnEdit_Click" ToolTip="Chỉnh sửa máy ảo">
-                                        <materialDesign:PackIcon Kind="PencilOutline" Width="14" Height="14"
-                                                                 Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
-                                    </Button>
-                                    <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                            Width="24" Height="24" Padding="0"
-                                            Click="BtnDelete_Click" ToolTip="Xóa máy ảo này">
-                                        <materialDesign:PackIcon Kind="DeleteOutline" Width="14" Height="14"
-                                                                 Foreground="{DynamicResource AppDangerButtonBackground}"/>
-                                    </Button>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </materialDesign:Card>
