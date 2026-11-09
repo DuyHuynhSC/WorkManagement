@@ -143,4 +143,15 @@ public class ProjectManagementTests
             }
         }
     }
+
+    [Fact]
+    public async Task GetTablespacesForUsersAsync_EmptyUsers_ReturnsEmptyListWithoutDbCall()
+    {
+        var project = new ProjectEntry { HostServer = "127.0.0.1" };
+        var result = await ProjectCleanupService.GetTablespacesForUsersAsync(project, "SYSTEM", "pwd", Array.Empty<string>());
+        Assert.Empty(result);
+
+        var whitespaceUsers = await ProjectCleanupService.GetTablespacesForUsersAsync(project, "SYSTEM", "pwd", new[] { "", "   " });
+        Assert.Empty(whitespaceUsers);
+    }
 }

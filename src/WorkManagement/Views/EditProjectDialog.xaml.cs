@@ -164,6 +164,69 @@ public partial class EditProjectDialog : Window
         }
     }
 
+    private async void BtnGetTablespace_Click(object sender, RoutedEventArgs e)
+    {
+        string host = CmbHostServer.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            MessageBox.Show(this, "Vui lòng nhập Host Server (IP) của Oracle DB.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        string dbaUser = TxtDbaUsername.Text.Trim();
+        string dbaPass = _isPasswordRevealed ? TxtDbaPasswordRevealed.Text : PbDbaPassword.Password;
+
+        if (string.IsNullOrWhiteSpace(dbaUser))
+        {
+            MessageBox.Show(this, "Vui lòng nhập Tài khoản DBA (ví dụ: SYSTEM hoặc SYS).", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var users = ProjectCleanupService.ParseUserList(TxtDbUsers.Text);
+        if (users.Count == 0)
+        {
+            MessageBox.Show(this, "Vui lòng nhập Danh sách DB User cần quản lý trước khi lấy Tablespace.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            TxtDbUsers.Focus();
+            return;
+        }
+
+        TxtStatusMessage.Text = "Đang truy vấn Tablespace từ Oracle DB...";
+        BtnGetTablespace.IsEnabled = false;
+
+        var tempProject = new ProjectEntry
+        {
+            HostServer = host,
+            Port = TxtPort.Text.Trim(),
+            ServiceName = TxtServiceName.Text.Trim()
+        };
+
+        try
+        {
+            var tablespaces = await ProjectCleanupService.GetTablespacesForUsersAsync(tempProject, dbaUser, dbaPass, users);
+            if (tablespaces.Count > 0)
+            {
+                string result = string.Join(", ", tablespaces);
+                TxtTablespace.Text = result;
+                TxtStatusMessage.Text = $"Đã lấy Tablespace thành công: {result}";
+                MessageBox.Show(this, $"Đã tìm thấy {tablespaces.Count} Tablespace cho các user ({string.Join(", ", users)}):\n\n{result}", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                TxtStatusMessage.Text = "Không tìm thấy Tablespace nào cho danh sách User đã nhập.";
+                MessageBox.Show(this, $"Không tìm thấy Tablespace nào trong Oracle DB tương ứng với các user ({string.Join(", ", users)}).\nVui lòng kiểm tra lại danh sách DB User hoặc quyền của tài khoản DBA.", "Không tìm thấy", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            TxtStatusMessage.Text = "Lỗi khi truy vấn Tablespace từ Database.";
+            MessageBox.Show(this, $"Lỗi khi kết nối hoặc truy vấn Oracle Database:\n{ex.Message}", "Lỗi kết nối", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            BtnGetTablespace.IsEnabled = true;
+        }
+    }
+
     private void BtnSave_Click(object sender, RoutedEventArgs e)
     {
         string projectName = TxtProjectName.Text.Trim();

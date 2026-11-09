@@ -598,6 +598,56 @@ public class ProjectCleanupService
         }
     }
 
+    public static async Task<List<string>> GetTablespacesForUsersAsync(
+        ProjectEntry project,
+        string dbaUser,
+        string dbaPassword,
+        IEnumerable<string> users,
+        CancellationToken ct = default)
+    {
+        var userList = users
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .Select(u => u.Trim().ToUpperInvariant())
+            .Distinct()
+            .ToList();
+
+        if (userList.Count == 0)
+        {
+            return new List<string>();
+        }
+
+        using var conn = CreateOracleConnection(project, dbaUser, dbaPassword);
+        await conn.OpenAsync(ct);
+
+        var paramNames = new List<string>();
+        using var cmd = conn.CreateCommand();
+
+        for (int i = 0; i < userList.Count; i++)
+        {
+            string pName = $"u{i}";
+            paramNames.Add($":{pName}");
+            cmd.Parameters.Add(new OracleParameter(pName, userList[i]));
+        }
+
+        cmd.CommandText = $"SELECT DISTINCT DEFAULT_TABLESPACE FROM DBA_USERS WHERE UPPER(USERNAME) IN ({string.Join(", ", paramNames)})";
+
+        var tablespaces = new List<string>();
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            if (!reader.IsDBNull(0))
+            {
+                string ts = reader.GetString(0).Trim();
+                if (!string.IsNullOrEmpty(ts) && !tablespaces.Contains(ts, StringComparer.OrdinalIgnoreCase))
+                {
+                    tablespaces.Add(ts);
+                }
+            }
+        }
+
+        return tablespaces;
+    }
+
     private void Report(double percentage, string message, bool isError = false)
     {
         Log(message, isError);

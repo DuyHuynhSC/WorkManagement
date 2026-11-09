@@ -121,10 +121,26 @@
                                  TextWrapping="Wrap" AcceptsReturn="True" MaxHeight="60"
                                  Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
 
-                        <TextBox x:Name="TxtTablespace" Margin="0,0,0,12"
-                                 materialDesign:HintAssist.Hint="Tên Tablespace cần xóa (ví dụ: TS_UTSUGI) *"
-                                 FontWeight="SemiBold"
-                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="TxtTablespace" Grid.Column="0" Margin="0,0,8,0"
+                                     materialDesign:HintAssist.Hint="Tên Tablespace cần xóa (ví dụ: TS_UTSUGI) *"
+                                     FontWeight="SemiBold"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                            <Button x:Name="BtnGetTablespace" Grid.Column="1" Style="{StaticResource AppOutlinedButtonStyle}"
+                                    Height="32" Padding="10,0" VerticalAlignment="Bottom" Click="BtnGetTablespace_Click"
+                                    ToolTip="Truy vấn Tablespace của các User từ Oracle Database bằng tài khoản DBA">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="DatabaseSearchOutline" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Get TableSpace" VerticalAlignment="Center" FontSize="11.5"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
 
                         <!-- TÀI KHOẢN DBA DÙNG ĐỂ THỰC THI XÓA -->
                         <Border Background="{DynamicResource AppSubtlePanelBackgroundBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,12">
