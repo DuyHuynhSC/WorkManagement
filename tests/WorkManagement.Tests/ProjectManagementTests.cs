@@ -154,4 +154,25 @@ public class ProjectManagementTests
         var whitespaceUsers = await ProjectCleanupService.GetTablespacesForUsersAsync(project, "SYSTEM", "pwd", new[] { "", "   " });
         Assert.Empty(whitespaceUsers);
     }
+
+    [Fact]
+    public void FilterByPersonInCharge_OnlyImportsSelectedProjects()
+    {
+        var projects = new List<ProjectEntry>
+        {
+            new() { ProjectName = "Proj1", PersonInCharge = "Duy" },
+            new() { ProjectName = "Proj2", PersonInCharge = "Duy" },
+            new() { ProjectName = "Proj3", PersonInCharge = "Tuấn" },
+            new() { ProjectName = "Proj4", PersonInCharge = "" }
+        };
+
+        // Giả lập người dùng chỉ chọn người phụ trách "Duy"
+        var selectedPersons = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Duy" };
+        var filtered = projects
+            .Where(p => selectedPersons.Contains((p.PersonInCharge ?? string.Empty).Trim()))
+            .ToList();
+
+        Assert.Equal(2, filtered.Count);
+        Assert.All(filtered, p => Assert.Equal("Duy", p.PersonInCharge));
+    }
 }

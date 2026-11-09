@@ -790,10 +790,25 @@ public partial class ProjectManagerView : UserControl
                 return;
             }
 
+            // Mở màn hình chọn người phụ trách cần import
+            var personDialog = new SelectPersonInChargeImportDialog(imported) { Owner = parent };
+            if (personDialog.ShowDialog() != true) return;
+
+            var selectedPersons = personDialog.SelectedRawPersons;
+            var filteredImported = imported
+                .Where(p => selectedPersons.Contains((p.PersonInCharge ?? string.Empty).Trim()))
+                .ToList();
+
+            if (filteredImported.Count == 0)
+            {
+                MessageBox.Show(parent, "Không có dự án nào thuộc những người phụ trách đã chọn.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             int added = 0;
             int updated = 0;
 
-            foreach (var item in imported)
+            foreach (var item in filteredImported)
             {
                 int existingIdx = _allEntries.FindIndex(x =>
                     (!string.IsNullOrEmpty(item.ProjectName) && x.ProjectName.Equals(item.ProjectName, StringComparison.OrdinalIgnoreCase)) ||
@@ -812,7 +827,9 @@ public partial class ProjectManagerView : UserControl
                 }
             }
 
+            ResolveDbaFromVm(_allEntries);
             _projectService.SaveAll(_allEntries);
+
             _displayEntries.Clear();
             foreach (var item in _allEntries)
             {
@@ -825,7 +842,7 @@ public partial class ProjectManagerView : UserControl
             _ = Dispatcher.BeginInvoke(new Action(AutoFitColumns), DispatcherPriority.Loaded);
 
             MessageBox.Show(parent,
-                $"Import thành công!\n- Thêm mới: {added} dự án\n- Cập nhật (ghi đè): {updated} dự án\n- Tổng số dự án hiện tại: {_allEntries.Count}",
+                $"Import hoàn tất!\n- Đã lọc: {filteredImported.Count}/{imported.Count} dự án ({selectedPersons.Count} người phụ trách)\n- Thêm mới: {added} dự án\n- Cập nhật (ghi đè): {updated} dự án\n- Tổng số dự án hiện tại: {_allEntries.Count}",
                 "Kết quả Import", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
