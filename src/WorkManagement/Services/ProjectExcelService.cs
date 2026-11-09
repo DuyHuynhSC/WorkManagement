@@ -17,6 +17,210 @@ public class ProjectExcelService
             var result = new List<ProjectEntry>();
             if (!File.Exists(filePath)) return result;
 
+            List<IDictionary<string, object>> rawRows;
+            try
+            {
+                rawRows = MiniExcel.Query(filePath, useHeaderRow: false)
+                    .OfType<IDictionary<string, object>>()
+                    .ToList();
+            }
+            catch
+            {
+                return result;
+            }
+
+            if (rawRows.Count < 3)
+            {
+                // Thử đọc theo kiểu có header row nếu file quá ngắn
+                return FallbackReadWithHeader(filePath);
+            }
+
+            // Theo yêu cầu: Bỏ qua 2 dòng đầu tiên (index 0, 1). Dòng thứ 3 (index 2) là Title.
+            // Dữ liệu import từ dòng thứ 4 (index 3 trở đi).
+            int titleRowIndex = -1;
+            var colMapping = new Dictionary<string, string>(); // colKey ("A", "B") -> Property Name
+
+            // 1. Ưu tiên kiểm tra dòng thứ 3 (index 2)
+            if (rawRows.Count >= 3)
+            {
+                var mappingRow3 = DetectProjectHeader(rawRows[2]);
+                if (mappingRow3.Count >= 2)
+                {
+                    titleRowIndex = 2;
+                    colMapping = mappingRow3;
+                }
+            }
+
+            // 2. Dự phòng tương thích ngược: nếu dòng 3 không phải header, quét các dòng khác từ dòng 0 đến 5
+            if (titleRowIndex == -1)
+            {
+                int limit = Math.Min(5, rawRows.Count);
+                for (int i = 0; i < limit; i++)
+                {
+                    var m = DetectProjectHeader(rawRows[i]);
+                    if (m.Count >= 2 && m.Count > colMapping.Count)
+                    {
+                        titleRowIndex = i;
+                        colMapping = m;
+                    }
+                }
+            }
+
+            if (titleRowIndex == -1 || colMapping.Count == 0)
+            {
+                return FallbackReadWithHeader(filePath);
+            }
+
+            // Đọc dữ liệu từ dòng kế tiếp sau Title (với dòng 3 là Title thì bắt đầu từ dòng 4, tức index 3)
+            int startDataRow = titleRowIndex + 1;
+            for (int i = startDataRow; i < rawRows.Count; i++)
+            {
+                var row = rawRows[i];
+                if (row.Values.All(v => v == null || string.IsNullOrWhiteSpace(v.ToString())))
+                {
+                    continue;
+                }
+
+                var entry = new ProjectEntry();
+
+                foreach (var mapping in colMapping)
+                {
+                    string colKey = mapping.Key;
+                    string propName = mapping.Value;
+
+                    if (!row.TryGetValue(colKey, out var rawVal) || rawVal == null) continue;
+                    string valStr = rawVal.ToString()?.Trim() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(valStr)) continue;
+
+                    switch (propName)
+                    {
+                        case nameof(ProjectEntry.No):
+                            entry.No = valStr;
+                            break;
+                        case nameof(ProjectEntry.ProjectName):
+                            entry.ProjectName = valStr;
+                            break;
+                        case nameof(ProjectEntry.Description):
+                            entry.Description = valStr;
+                            break;
+                        case nameof(ProjectEntry.SourceFolder):
+                            entry.SourceFolder = valStr;
+                            break;
+                        case nameof(ProjectEntry.TnsName):
+                            entry.TnsName = valStr;
+                            break;
+                        case nameof(ProjectEntry.HostServer):
+                            entry.HostServer = valStr;
+                            break;
+                        case nameof(ProjectEntry.ServiceName):
+                            entry.ServiceName = valStr;
+                            break;
+                        case nameof(ProjectEntry.Port):
+                            entry.Port = valStr;
+                            break;
+                        case nameof(ProjectEntry.DbUsers):
+                            entry.DbUsers = valStr;
+                            break;
+                        case nameof(ProjectEntry.Tablespace):
+                            entry.Tablespace = valStr;
+                            break;
+                        case nameof(ProjectEntry.DbaUsername):
+                            entry.DbaUsername = valStr;
+                            break;
+                        case nameof(ProjectEntry.DbaPassword):
+                            entry.DbaPassword = valStr;
+                            break;
+                        case nameof(ProjectEntry.PersonInCharge):
+                            entry.PersonInCharge = valStr;
+                            break;
+                        case nameof(ProjectEntry.Notes):
+                            entry.Notes = valStr;
+                            break;
+                        case nameof(ProjectEntry.Notes2):
+                            entry.Notes2 = valStr;
+                            break;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(entry.ServiceName)) entry.ServiceName = "ORCL";
+                if (string.IsNullOrWhiteSpace(entry.Port)) entry.Port = "1521";
+                if (string.IsNullOrWhiteSpace(entry.DbaUsername)) entry.DbaUsername = "SYSTEM";
+
+                // Chỉ nhận dòng nếu có thông tin dự án tối thiểu (Tên dự án, Source folder hoặc Host)
+                if (!string.IsNullOrWhiteSpace(entry.ProjectName) || !string.IsNullOrWhiteSpace(entry.SourceFolder) || !string.IsNullOrWhiteSpace(entry.HostServer))
+                {
+                    result.Add(entry);
+                }
+            }
+
+            return result;
+        });
+    }
+
+    private static Dictionary<string, string> DetectProjectHeader(IDictionary<string, object> row)
+    {
+        var mapping = new Dictionary<string, string>();
+        foreach (var kv in row)
+        {
+            if (kv.Value == null) continue;
+            string text = kv.Value.ToString()?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text)) continue;
+
+            string norm = NormalizeKey(text);
+            string? prop = MatchProjectProperty(norm);
+            if (prop != null && !mapping.ContainsValue(prop))
+            {
+                mapping[kv.Key] = prop;
+            }
+        }
+        return mapping;
+    }
+
+    private static string? MatchProjectProperty(string norm)
+    {
+        if (norm.Contains("ghi chu 2") || norm.Contains("notes 2")) return nameof(ProjectEntry.Notes2);
+        if (norm == "no" || norm == "stt" || norm == "ma") return nameof(ProjectEntry.No);
+        if (norm == "project" || norm.Contains("ten du an") || norm == "du an" || norm == "project name" || norm == "projectname") return nameof(ProjectEntry.ProjectName);
+        if (norm.Contains("giai thich") || norm.Contains("description") || norm == "mo ta" || norm.Contains("version")) return nameof(ProjectEntry.Description);
+        if (norm.Contains("source") || norm.Contains("thu muc") || norm.Contains("folder")) return nameof(ProjectEntry.SourceFolder);
+        if (norm.Contains("tns")) return nameof(ProjectEntry.TnsName);
+        if (norm.Contains("host") || norm == "ip" || norm.Contains("may ao") || norm.Contains("server")) return nameof(ProjectEntry.HostServer);
+        if (norm.Contains("service") || norm == "sid" || norm.Contains("database name")) return nameof(ProjectEntry.ServiceName);
+        if (norm == "port" || norm == "cong") return nameof(ProjectEntry.Port);
+        if (norm.Contains("user") && (norm.Contains("db") || norm.Contains("nguoi dung") || norm == "user")) return nameof(ProjectEntry.DbUsers);
+        if (norm.Contains("tablespace")) return nameof(ProjectEntry.Tablespace);
+        if (norm.Contains("dba user") || norm.Contains("tai khoan dba") || norm.Contains("admin user") || norm == "dba") return nameof(ProjectEntry.DbaUsername);
+        if (norm.Contains("dba password") || norm.Contains("mat khau dba") || norm.Contains("dba pass")) return nameof(ProjectEntry.DbaPassword);
+        if (norm.Contains("nguoi phu trach") || norm.Contains("person in charge") || norm.Contains("tester") || norm.Contains("pic") || norm.Contains("nguoi kt")) return nameof(ProjectEntry.PersonInCharge);
+        if (norm.Contains("ghi chu") || norm.Contains("notes")) return nameof(ProjectEntry.Notes);
+
+        return null;
+    }
+
+    private static string NormalizeKey(string? str)
+    {
+        if (string.IsNullOrWhiteSpace(str)) return string.Empty;
+        var normalizedString = str.Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in normalizedString)
+        {
+            var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                sb.Append(c);
+            }
+        }
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC)
+            .Replace("đ", "d").Replace("Đ", "D")
+            .Trim().ToLowerInvariant()
+            .Replace("_", " ").Replace("-", " ").Replace("/", " ").Replace(".", " ").Replace(":", " ");
+    }
+
+    private static List<ProjectEntry> FallbackReadWithHeader(string filePath)
+    {
+        var result = new List<ProjectEntry>();
+        try
+        {
             using var stream = File.OpenRead(filePath);
             var rows = stream.Query(useHeaderRow: true).ToList();
 
@@ -38,7 +242,6 @@ public class ProjectExcelService
                         }
                     }
 
-                    // Fallback to partial match
                     foreach (var key in columnKeys)
                     {
                         var match = row.FirstOrDefault(kvp =>
@@ -58,100 +261,120 @@ public class ProjectExcelService
                 string sourceFolder = GetVal("Source Folder", "SourceFolder", "Thư mục source", "Folder");
                 string host = GetVal("Host Server", "HostServer", "Host", "IP", "Máy ảo");
 
-                // Bỏ qua dòng trống nếu không có thông tin dự án tối thiểu
                 if (string.IsNullOrWhiteSpace(projectName) && string.IsNullOrWhiteSpace(sourceFolder) && string.IsNullOrWhiteSpace(host))
                 {
                     continue;
                 }
 
-                string no = GetVal("No", "STT", "Mã");
-                string desc = GetVal("Giải thích thêm (Version - Mục đích)", "Giải thích thêm", "Description", "Mô tả", "Version");
-                string tns = GetVal("tnsname (tham khảo file:", "tnsname", "TNS", "TnsName");
-                string service = GetVal("Service Name", "ServiceName", "Service", "SID", "Database Name");
-                if (string.IsNullOrWhiteSpace(service)) service = "ORCL";
-
-                string port = GetVal("Port", "Cổng");
-                if (string.IsNullOrWhiteSpace(port)) port = "1521";
-
-                string user = GetVal("User", "DB User", "DB Users", "Người dùng");
-                string tablespace = GetVal("Tablespace", "Tên Tablespace", "Tablespace Name");
-                string dbaUser = GetVal("DBA User", "Tài khoản DBA", "Admin User");
-                if (string.IsNullOrWhiteSpace(dbaUser)) dbaUser = "SYSTEM";
-
-                string dbaPass = GetVal("DBA Password", "Mật khẩu DBA", "DBA Pass");
-                string notes = GetVal("Ghi chú", "Notes", "GhiChu");
-                string person = GetVal("Người phụ trách", "Person In Charge", "Tester", "Người KT", "PIC");
-                string notes2 = GetVal("Ghi chú 2", "Notes 2", "GhiChu2");
-
-                var entry = new ProjectEntry
+                result.Add(new ProjectEntry
                 {
-                    No = no,
+                    No = GetVal("No", "STT", "Mã"),
                     ProjectName = projectName,
-                    Description = desc,
+                    Description = GetVal("Giải thích thêm (Version - Mục đích)", "Giải thích thêm", "Description", "Mô tả", "Version"),
                     SourceFolder = sourceFolder,
-                    TnsName = tns,
+                    TnsName = GetVal("tnsname (tham khảo file:", "tnsname", "TNS", "TnsName"),
                     HostServer = host,
-                    ServiceName = service,
-                    Port = port,
-                    DbUsers = user,
-                    Tablespace = tablespace,
-                    DbaUsername = dbaUser,
-                    DbaPassword = dbaPass,
-                    Notes = notes,
-                    PersonInCharge = person,
-                    Notes2 = notes2
-                };
-
-                result.Add(entry);
+                    ServiceName = string.IsNullOrWhiteSpace(GetVal("Service Name", "ServiceName", "Service", "SID", "Database Name")) ? "ORCL" : GetVal("Service Name", "ServiceName", "Service", "SID", "Database Name"),
+                    Port = string.IsNullOrWhiteSpace(GetVal("Port", "Cổng")) ? "1521" : GetVal("Port", "Cổng"),
+                    DbUsers = GetVal("User", "DB User", "DB Users", "Người dùng"),
+                    Tablespace = GetVal("Tablespace", "Tên Tablespace", "Tablespace Name"),
+                    DbaUsername = string.IsNullOrWhiteSpace(GetVal("DBA User", "Tài khoản DBA", "Admin User")) ? "SYSTEM" : GetVal("DBA User", "Tài khoản DBA", "Admin User"),
+                    DbaPassword = GetVal("DBA Password", "Mật khẩu DBA", "DBA Pass"),
+                    Notes = GetVal("Ghi chú", "Notes", "GhiChu"),
+                    PersonInCharge = GetVal("Người phụ trách", "Person In Charge", "Tester", "Người KT", "PIC"),
+                    Notes2 = GetVal("Ghi chú 2", "Notes 2", "GhiChu2")
+                });
             }
+        }
+        catch { }
 
-            return result;
-        });
+        return result;
     }
 
     public Task ExportTemplateAsync(string destinationPath)
     {
         return Task.Run(() =>
         {
-            var sampleRows = new List<Dictionary<string, object>>
+            var rows = new List<Dictionary<string, object>>
             {
+                // Dòng 1: Tiêu đề danh mục (Bỏ qua khi import)
                 new()
                 {
-                    ["No"] = "316",
-                    ["Project"] = "UTSUGI",
-                    ["Giải thích thêm (Version - Mục đích)"] = "Customize V10",
-                    ["Source Folder"] = @"Q:\V10_UTG",
-                    ["tnsname (tham khảo file:"] = "ORCL19F",
-                    ["Host Server"] = "172.16.6.23",
-                    ["Service Name"] = "ORCL",
-                    ["Port"] = "1521",
-                    ["User"] = "UTG_RPS, UTG_USR1, UTG_USR9, UTG_LOG",
-                    ["Tablespace"] = "TS_UTSUGI",
-                    ["DBA User"] = "SYSTEM",
-                    ["Ghi chú"] = "2026/06/23 Tạo mới",
-                    ["Người phụ trách"] = "Duy",
-                    ["Ghi chú 2"] = ""
+                    ["A"] = "DANH MỤC THÔNG TIN DỰ ÁN (DÒNG 1 NÀY SẼ BỎ QUA KHI IMPORT)",
+                    ["B"] = "", ["C"] = "", ["D"] = "", ["E"] = "", ["F"] = "",
+                    ["G"] = "", ["H"] = "", ["I"] = "", ["J"] = "", ["K"] = "",
+                    ["L"] = "", ["M"] = "", ["N"] = ""
                 },
+                // Dòng 2: Hướng dẫn / phiên bản (Bỏ qua khi import)
                 new()
                 {
-                    ["No"] = "324",
-                    ["Project"] = "CUORE",
-                    ["Giải thích thêm (Version - Mục đích)"] = "Customize V10",
-                    ["Source Folder"] = @"Q:\V10_CUORE",
-                    ["tnsname (tham khảo file:"] = "ORCL19F",
-                    ["Host Server"] = "172.16.6.23",
-                    ["Service Name"] = "ORCL",
-                    ["Port"] = "1521",
-                    ["User"] = "COR_RPS, COR_USR1, COR_USR9, COR_LOG, COR_TST_USR1(Dùng để test script)",
-                    ["Tablespace"] = "TS_CUORE",
-                    ["DBA User"] = "SYSTEM",
-                    ["Ghi chú"] = "2026/07/14 Tạo mới",
-                    ["Người phụ trách"] = "Duy",
-                    ["Ghi chú 2"] = ""
+                    ["A"] = "DÒNG 2: THÔNG TIN PHIÊN BẢN (HỆ THỐNG CŨNG SẼ BỎ QUA DÒNG NÀY)",
+                    ["B"] = "", ["C"] = "", ["D"] = "", ["E"] = "", ["F"] = "",
+                    ["G"] = "", ["H"] = "", ["I"] = "", ["J"] = "", ["K"] = "",
+                    ["L"] = "", ["M"] = "", ["N"] = ""
+                },
+                // Dòng 3: Title các item
+                new()
+                {
+                    ["A"] = "No",
+                    ["B"] = "Project",
+                    ["C"] = "Giải thích thêm (Version - Mục đích)",
+                    ["D"] = "Source Folder",
+                    ["E"] = "tnsname (tham khảo file:",
+                    ["F"] = "Host Server",
+                    ["G"] = "Service Name",
+                    ["H"] = "Port",
+                    ["I"] = "User",
+                    ["J"] = "Tablespace",
+                    ["K"] = "DBA User",
+                    ["L"] = "Ghi chú",
+                    ["M"] = "Người phụ trách",
+                    ["N"] = "Ghi chú 2"
+                },
+                // Dòng 4: Dữ liệu mẫu 1
+                new()
+                {
+                    ["A"] = "316",
+                    ["B"] = "UTSUGI",
+                    ["C"] = "Customize V10",
+                    ["D"] = @"Q:\V10_UTG",
+                    ["E"] = "ORCL19F",
+                    ["F"] = "172.16.6.23",
+                    ["G"] = "ORCL",
+                    ["H"] = "1521",
+                    ["I"] = "UTG_RPS, UTG_USR1, UTG_USR9, UTG_LOG",
+                    ["J"] = "TS_UTSUGI",
+                    ["K"] = "SYSTEM",
+                    ["L"] = "2026/06/23 Tạo mới",
+                    ["M"] = "Duy",
+                    ["N"] = ""
+                },
+                // Dòng 5: Dữ liệu mẫu 2
+                new()
+                {
+                    ["A"] = "324",
+                    ["B"] = "CUORE",
+                    ["C"] = "Customize V10",
+                    ["D"] = @"Q:\V10_CUORE",
+                    ["E"] = "ORCL19F",
+                    ["F"] = "172.16.6.23",
+                    ["G"] = "ORCL",
+                    ["H"] = "1521",
+                    ["I"] = "COR_RPS, COR_USR1, COR_USR9, COR_LOG",
+                    ["J"] = "TS_CUORE",
+                    ["K"] = "SYSTEM",
+                    ["L"] = "2026/07/14 Tạo mới",
+                    ["M"] = "Duy",
+                    ["N"] = ""
                 }
             };
 
-            MiniExcel.SaveAs(destinationPath, sampleRows, overwriteFile: true);
+            var workbook = new Dictionary<string, object>
+            {
+                ["Danh mục dự án"] = rows
+            };
+
+            MiniExcel.SaveAs(destinationPath, workbook, overwriteFile: true);
         });
     }
 

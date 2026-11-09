@@ -175,4 +175,114 @@ public class ProjectManagementTests
         Assert.Equal(2, filtered.Count);
         Assert.All(filtered, p => Assert.Equal("Duy", p.PersonInCharge));
     }
+
+    [Fact]
+    public async Task ReadProjectsFromExcel_Row1And2Ignored_Row3IsTitle_ImportsFromRow4()
+    {
+        string tempXlsx = Path.Combine(Path.GetTempPath(), $"proj_row3_title_{Guid.NewGuid():N}.xlsx");
+        try
+        {
+            var rows = new List<System.Collections.Generic.Dictionary<string, object>>
+            {
+                // Dòng 1: Tiêu đề báo cáo (bỏ qua)
+                new()
+                {
+                    { "A", "DANH SÁCH DỰ ÁN NỘI BỘ" },
+                    { "B", "" }, { "C", "" }, { "D", "" }, { "E", "" },
+                    { "F", "" }, { "G", "" }, { "H", "" }, { "I", "" },
+                    { "J", "" }, { "K", "" }, { "L", "" }
+                },
+                // Dòng 2: Ghi chú phiên bản (bỏ qua)
+                new()
+                {
+                    { "A", "Cập nhật ngày 2026-11-09" },
+                    { "B", "" }, { "C", "" }, { "D", "" }, { "E", "" },
+                    { "F", "" }, { "G", "" }, { "H", "" }, { "I", "" },
+                    { "J", "" }, { "K", "" }, { "L", "" }
+                },
+                // Dòng 3: Title của các cột
+                new()
+                {
+                    { "A", "STT" },
+                    { "B", "Tên Dự Án" },
+                    { "C", "Mô tả" },
+                    { "D", "Thư mục source" },
+                    { "E", "Máy ảo" },
+                    { "F", "SID" },
+                    { "G", "Port" },
+                    { "H", "DB User" },
+                    { "I", "Tablespace" },
+                    { "J", "Tài khoản DBA" },
+                    { "K", "Người phụ trách" },
+                    { "L", "Ghi chú" }
+                },
+                // Dòng 4: Dự án 1
+                new()
+                {
+                    { "A", "1" },
+                    { "B", "PROJ_ALPHA" },
+                    { "C", "Dự án Alpha" },
+                    { "D", @"D:\Sources\Alpha" },
+                    { "E", "172.16.6.100" },
+                    { "F", "ORCL" },
+                    { "G", "1521" },
+                    { "H", "USR_ALPHA" },
+                    { "I", "TS_ALPHA" },
+                    { "J", "SYSTEM" },
+                    { "K", "Duy" },
+                    { "L", "Khởi tạo" }
+                },
+                // Dòng 5: Dự án 2
+                new()
+                {
+                    { "A", "2" },
+                    { "B", "PROJ_BETA" },
+                    { "C", "Dự án Beta" },
+                    { "D", @"D:\Sources\Beta" },
+                    { "E", "172.16.6.101" },
+                    { "F", "ORCL19" },
+                    { "G", "1521" },
+                    { "H", "USR_BETA" },
+                    { "I", "TS_BETA" },
+                    { "J", "SYS" },
+                    { "K", "Huy" },
+                    { "L", "Bảo trì" }
+                }
+            };
+
+            var workbook = new System.Collections.Generic.Dictionary<string, object>
+            {
+                { "Projects", rows }
+            };
+
+            MiniExcelLibs.MiniExcel.SaveAs(tempXlsx, workbook, overwriteFile: true);
+
+            var service = new ProjectExcelService();
+            var result = await service.ReadProjectsFromExcelAsync(tempXlsx);
+
+            Assert.Equal(2, result.Count);
+
+            var p1 = result[0];
+            Assert.Equal("1", p1.No);
+            Assert.Equal("PROJ_ALPHA", p1.ProjectName);
+            Assert.Equal("Dự án Alpha", p1.Description);
+            Assert.Equal(@"D:\Sources\Alpha", p1.SourceFolder);
+            Assert.Equal("172.16.6.100", p1.HostServer);
+            Assert.Equal("USR_ALPHA", p1.DbUsers);
+            Assert.Equal("TS_ALPHA", p1.Tablespace);
+            Assert.Equal("SYSTEM", p1.DbaUsername);
+            Assert.Equal("Duy", p1.PersonInCharge);
+
+            var p2 = result[1];
+            Assert.Equal("2", p2.No);
+            Assert.Equal("PROJ_BETA", p2.ProjectName);
+            Assert.Equal(@"D:\Sources\Beta", p2.SourceFolder);
+            Assert.Equal("172.16.6.101", p2.HostServer);
+            Assert.Equal("Huy", p2.PersonInCharge);
+        }
+        finally
+        {
+            if (File.Exists(tempXlsx)) File.Delete(tempXlsx);
+        }
+    }
 }
