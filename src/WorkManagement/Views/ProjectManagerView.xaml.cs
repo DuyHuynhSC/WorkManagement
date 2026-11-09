@@ -806,25 +806,16 @@ public partial class ProjectManagerView : UserControl
             }
 
             int added = 0;
-            int updated = 0;
 
             foreach (var item in filteredImported)
             {
-                int existingIdx = _allEntries.FindIndex(x =>
-                    (!string.IsNullOrEmpty(item.ProjectName) && x.ProjectName.Equals(item.ProjectName, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrEmpty(item.No) && x.No.Equals(item.No, StringComparison.OrdinalIgnoreCase)));
-
-                if (existingIdx >= 0)
+                // Import tất cả (Append All), không ghi đè theo tên dự án
+                if (string.IsNullOrWhiteSpace(item.Id))
                 {
-                    item.Id = _allEntries[existingIdx].Id;
-                    _allEntries[existingIdx] = item;
-                    updated++;
+                    item.Id = Guid.NewGuid().ToString();
                 }
-                else
-                {
-                    _allEntries.Add(item);
-                    added++;
-                }
+                _allEntries.Add(item);
+                added++;
             }
 
             ResolveDbaFromVm(_allEntries);
@@ -842,7 +833,7 @@ public partial class ProjectManagerView : UserControl
             _ = Dispatcher.BeginInvoke(new Action(AutoFitColumns), DispatcherPriority.Loaded);
 
             MessageBox.Show(parent,
-                $"Import hoàn tất!\n- Đã lọc: {filteredImported.Count}/{imported.Count} dự án ({selectedPersons.Count} người phụ trách)\n- Thêm mới: {added} dự án\n- Cập nhật (ghi đè): {updated} dự án\n- Tổng số dự án hiện tại: {_allEntries.Count}",
+                $"Import hoàn tất!\n- Đã nạp thành công: {added} dự án ({selectedPersons.Count} người phụ trách)\n- Tổng số dự án hiện tại trong hệ thống: {_allEntries.Count}",
                 "Kết quả Import", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)

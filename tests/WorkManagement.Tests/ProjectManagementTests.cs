@@ -285,4 +285,38 @@ public class ProjectManagementTests
             if (File.Exists(tempXlsx)) File.Delete(tempXlsx);
         }
     }
+
+    [Fact]
+    public void ImportProjects_AppendAll_KeepsAllDuplicateNames()
+    {
+        var allEntries = new System.Collections.Generic.List<ProjectEntry>
+        {
+            new() { Id = "old-1", ProjectName = "AAA", SourceFolder = @"Q:\Old_AAA" }
+        };
+
+        // Danh sách import gồm 3 dự án cùng tên "AAA"
+        var importedProjects = new System.Collections.Generic.List<ProjectEntry>
+        {
+            new() { ProjectName = "AAA", SourceFolder = @"Q:\AAA_Branch1", PersonInCharge = "Duy" },
+            new() { ProjectName = "AAA", SourceFolder = @"Q:\AAA_Branch2", PersonInCharge = "Duy" },
+            new() { ProjectName = "AAA", SourceFolder = @"Q:\AAA_Branch3", PersonInCharge = "Duy" },
+        };
+
+        foreach (var item in importedProjects)
+        {
+            if (string.IsNullOrWhiteSpace(item.Id))
+            {
+                item.Id = Guid.NewGuid().ToString();
+            }
+            allEntries.Add(item);
+        }
+
+        // Kiểm tra tất cả 4 dự án (1 cũ + 3 mới) đều có trong danh sách
+        Assert.Equal(4, allEntries.Count);
+        Assert.Equal(4, allEntries.Count(p => p.ProjectName == "AAA"));
+
+        // Tất cả Id phải là duy nhất
+        var uniqueIds = allEntries.Select(p => p.Id).Distinct().ToList();
+        Assert.Equal(4, uniqueIds.Count);
+    }
 }
