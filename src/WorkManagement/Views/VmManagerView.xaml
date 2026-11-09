@@ -152,7 +152,11 @@
                       IsReadOnly="True" HeadersVisibility="Column" SelectionMode="Single"
                       Background="{DynamicResource AppCardBackgroundBrush}"
                       Foreground="{DynamicResource AppPrimaryTextBrush}"
-                      BorderThickness="0" GridLinesVisibility="Horizontal"
+                      BorderThickness="1"
+                      BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                      VerticalGridLinesBrush="{DynamicResource AppSubtlePanelBorderBrush}"
                       EnableRowVirtualization="True"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling"
@@ -160,6 +164,12 @@
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource MaterialDesignDataGridCell}">
+                        <Setter Property="Padding" Value="8,4"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                </DataGrid.CellStyle>
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource MaterialDesignDataGridRow}">
                         <Setter Property="Background" Value="Transparent"/>

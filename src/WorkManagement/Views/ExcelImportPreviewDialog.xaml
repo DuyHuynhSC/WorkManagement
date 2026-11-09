@@ -74,7 +74,11 @@
                       IsReadOnly="True" HeadersVisibility="Column" SelectionMode="Single"
                       Background="{DynamicResource AppCardBackgroundBrush}"
                       Foreground="{DynamicResource AppPrimaryTextBrush}"
-                      BorderThickness="0" GridLinesVisibility="Horizontal"
+                      BorderThickness="1"
+                      BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                      VerticalGridLinesBrush="{DynamicResource AppSubtlePanelBorderBrush}"
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="STT" Binding="{Binding No}" Width="50"/>
