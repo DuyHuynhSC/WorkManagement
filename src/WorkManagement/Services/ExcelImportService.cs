@@ -137,17 +137,32 @@ public class ExcelImportService
         var colMapping = new Dictionary<string, string>(); // ColumnKey (ví dụ "A", "B") -> Property Name
         int bestScore = 0;
 
-        // Quét tìm dòng tiêu đề Header (tìm trong tối đa 20 dòng đầu)
-        int searchLimit = Math.Min(20, rawRows.Count);
-        for (int i = 0; i < searchLimit; i++)
+        // Ưu tiên dòng thứ 2 (index 1) theo yêu cầu: Dòng 1 bỏ qua, Dòng 2 là title của các item
+        if (rawRows.Count > 1)
         {
-            var row = rawRows[i];
-            var (mapping, score) = DetectHeaderRow(row);
-            if (score > bestScore && mapping.Count >= 2)
+            var (mappingRow2, scoreRow2) = DetectHeaderRow(rawRows[1]);
+            if (scoreRow2 >= 20 && mappingRow2.Count >= 2)
             {
-                bestScore = score;
-                headerRowIndex = i;
-                colMapping = mapping;
+                headerRowIndex = 1;
+                colMapping = mappingRow2;
+                bestScore = scoreRow2;
+            }
+        }
+
+        // Nếu dòng 2 không phải header, quét tìm dòng tiêu đề trong tối đa 20 dòng đầu
+        if (headerRowIndex == -1)
+        {
+            int searchLimit = Math.Min(20, rawRows.Count);
+            for (int i = 0; i < searchLimit; i++)
+            {
+                var row = rawRows[i];
+                var (mapping, score) = DetectHeaderRow(row);
+                if (score > bestScore && mapping.Count >= 2)
+                {
+                    bestScore = score;
+                    headerRowIndex = i;
+                    colMapping = mapping;
+                }
             }
         }
 
@@ -225,6 +240,12 @@ public class ExcelImportService
                     case nameof(VirtualMachineEntry.ExpirationDate):
                         entry.ExpirationDate = valStr;
                         break;
+                    case nameof(VirtualMachineEntry.DbaUser):
+                        entry.DbaUser = valStr;
+                        break;
+                    case nameof(VirtualMachineEntry.DbaPassword):
+                        entry.DbaPassword = valStr;
+                        break;
                 }
             }
 
@@ -253,6 +274,8 @@ public class ExcelImportService
     {
         var mapping = new Dictionary<string, string>();
         int score = 0;
+        bool seenDbaUser = false;
+        bool seenOsPassword = false;
 
         foreach (var kv in row)
         {
@@ -263,35 +286,48 @@ public class ExcelImportService
             string normalized = NormalizeKey(text);
             string[] words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            string? prop = MatchProperty(normalized, words);
+            string? prop = MatchProperty(normalized, words, seenDbaUser, seenOsPassword);
             if (prop != null && !mapping.ContainsValue(prop))
             {
                 mapping[kv.Key] = prop;
 
-                // Tính điểm chất lượng nhận diện của Sheet
-                switch (prop)
+                if (prop == nameof(VirtualMachineEntry.DbaUser))
                 {
-                    case nameof(VirtualMachineEntry.Ip):
-                        score += 30;
-                        break;
-                    case nameof(VirtualMachineEntry.MachineName):
-                        score += 25;
-                        break;
-                    case nameof(VirtualMachineEntry.Os):
-                        score += 15;
-                        break;
-                    case nameof(VirtualMachineEntry.DomainOrWorkgroup):
-                        score += 10;
-                        break;
-                    case nameof(VirtualMachineEntry.Username):
-                        score += 10;
-                        break;
-                    case nameof(VirtualMachineEntry.Password):
-                        score += 10;
-                        break;
-                    default:
-                        score += 5;
-                        break;
+                    seenDbaUser = true;
+                    score += 15;
+                }
+                else if (prop == nameof(VirtualMachineEntry.DbaPassword))
+                {
+                    score += 15;
+                }
+                else if (prop == nameof(VirtualMachineEntry.Password))
+                {
+                    seenOsPassword = true;
+                    score += 10;
+                }
+                else if (prop == nameof(VirtualMachineEntry.Ip))
+                {
+                    score += 30;
+                }
+                else if (prop == nameof(VirtualMachineEntry.MachineName))
+                {
+                    score += 25;
+                }
+                else if (prop == nameof(VirtualMachineEntry.Os))
+                {
+                    score += 15;
+                }
+                else if (prop == nameof(VirtualMachineEntry.DomainOrWorkgroup))
+                {
+                    score += 10;
+                }
+                else if (prop == nameof(VirtualMachineEntry.Username))
+                {
+                    score += 10;
+                }
+                else
+                {
+                    score += 5;
                 }
             }
         }
@@ -299,8 +335,29 @@ public class ExcelImportService
         return (mapping, score);
     }
 
-    private static string? MatchProperty(string norm, string[] words)
+    private static string? MatchProperty(string norm, string[] words, bool seenDbaUser, bool seenOsPassword)
     {
+        // DBA USER
+        if (norm == "dba user" || norm == "dba username" || norm == "user dba" || norm == "dba" ||
+            norm.Contains("dba user") || norm.Contains("user dba"))
+            return nameof(VirtualMachineEntry.DbaUser);
+
+        // DBA PASSWORD: nếu chứa rõ dba password hoặc xuất hiện sau DBA User
+        if (norm == "dba password" || norm == "dba pass" || norm == "mat khau dba" || norm == "pass dba" || norm == "password dba" ||
+            norm.Contains("dba pass") || norm.Contains("pass dba"))
+            return nameof(VirtualMachineEntry.DbaPassword);
+
+        // PASSWORD / P: phải là 'p' chính xác hoặc từ pass/password
+        if (norm == "p" || norm == "pass" || norm == "password" || norm == "mat khau" ||
+            words.Contains("pass") || words.Contains("password"))
+        {
+            if (seenDbaUser || seenOsPassword)
+            {
+                return nameof(VirtualMachineEntry.DbaPassword);
+            }
+            return nameof(VirtualMachineEntry.Password);
+        }
+
         // NO / STT: so khớp chính xác
         if (norm == "no" || norm == "stt" || norm == "id" || norm == "no." || words.Contains("stt"))
             return nameof(VirtualMachineEntry.No);
@@ -326,11 +383,6 @@ public class ExcelImportService
         // USER / USERNAME / TÀI KHOẢN
         if (norm == "user" || norm == "username" || norm == "tai khoan" || norm == "nguoi dung" || words.Contains("user"))
             return nameof(VirtualMachineEntry.Username);
-
-        // PASSWORD / P: phải là 'p' chính xác hoặc từ pass/password (tránh bắt nhầm chữ cái 'p' trong Description, Dept, Group)
-        if (norm == "p" || norm == "pass" || norm == "password" || norm == "mat khau" ||
-            words.Contains("pass") || words.Contains("password"))
-            return nameof(VirtualMachineEntry.Password);
 
         // TNS: so khớp chính xác hoặc từ
         if (norm == "tns" || norm == "tns name" || words.Contains("tns"))
@@ -415,6 +467,8 @@ public class ExcelImportService
                     existing.Tester = string.IsNullOrWhiteSpace(incoming.Tester) ? existing.Tester : incoming.Tester;
                     existing.Notes = string.IsNullOrWhiteSpace(incoming.Notes) ? existing.Notes : incoming.Notes;
                     existing.ExpirationDate = string.IsNullOrWhiteSpace(incoming.ExpirationDate) ? existing.ExpirationDate : incoming.ExpirationDate;
+                    existing.DbaUser = string.IsNullOrWhiteSpace(incoming.DbaUser) ? existing.DbaUser : incoming.DbaUser;
+                    existing.DbaPassword = string.IsNullOrWhiteSpace(incoming.DbaPassword) ? existing.DbaPassword : incoming.DbaPassword;
 
                     result.UpdatedCount++;
                     result.ImportedEntries.Add(existing);
@@ -443,54 +497,152 @@ public class ExcelImportService
 
     public async Task ExportTemplateAsync(string destinationPath)
     {
-        var sampleRows = new[]
+        var rows = new List<Dictionary<string, object>>
         {
-            new
+            // Dòng 1: Tiêu đề tổng quát (Hệ thống sẽ tự động bỏ qua dòng đầu tiên này khi Import)
+            new()
             {
-                No = "1",
-                ip = "172.16.6.16",
-                Tên_máy = "D2-SVR15-6016",
-                Domain_Workgroup = "FUJINET.vn",
-                OS = "Windows Server 2008 64bit",
-                user = "Administrator",
-                P = "D2-20100802",
-                TNS = "ORCL11GR2K",
-                Database_Name = "ORCL11GR2K",
-                Version_Oracle = "11.2.0.4.0",
-                Người_kiểm_tra = "Duy",
-                Ghi_chú = "Oracle Server 11gr2",
-                Ngày_hết_hạn = "Vô hạn"
+                ["A"] = "DANH SÁCH MÁY ẢO VÀ THÔNG TIN DBA (DÒNG 1 NÀY SẼ BỎ QUA KHI IMPORT)",
+                ["B"] = string.Empty,
+                ["C"] = string.Empty,
+                ["D"] = string.Empty,
+                ["E"] = string.Empty,
+                ["F"] = string.Empty,
+                ["G"] = string.Empty,
+                ["H"] = string.Empty,
+                ["I"] = string.Empty,
+                ["J"] = string.Empty,
+                ["K"] = string.Empty,
+                ["L"] = string.Empty,
+                ["M"] = string.Empty,
+                ["N"] = string.Empty,
+                ["O"] = string.Empty
+            },
+            // Dòng 2: Tiêu đề các cột (Title của các item)
+            new()
+            {
+                ["A"] = "No",
+                ["B"] = "IP",
+                ["C"] = "Tên máy",
+                ["D"] = "Domain / Workgroup",
+                ["E"] = "OS",
+                ["F"] = "User",
+                ["G"] = "Password",
+                ["H"] = "TNS",
+                ["I"] = "Database Name",
+                ["J"] = "Version Oracle",
+                ["K"] = "Người kiểm tra",
+                ["L"] = "Ghi chú",
+                ["M"] = "Ngày hết hạn",
+                ["N"] = "DBA User",
+                ["O"] = "Password"
+            },
+            // Dòng 3: Dòng dữ liệu mẫu
+            new()
+            {
+                ["A"] = "1",
+                ["B"] = "172.16.6.16",
+                ["C"] = "D2-SVR15-6016",
+                ["D"] = "FUJINET.vn",
+                ["E"] = "Windows Server 2008 64bit",
+                ["F"] = "Administrator",
+                ["G"] = "D2-20100802",
+                ["H"] = "ORCL11GR2K",
+                ["I"] = "ORCL11GR2K",
+                ["J"] = "11.2.0.4.0",
+                ["K"] = "Duy",
+                ["L"] = "Oracle Server 11gr2",
+                ["M"] = "Vô hạn",
+                ["N"] = "SYSTEM",
+                ["O"] = "manager"
             }
+        };
+
+        var workbook = new Dictionary<string, object>
+        {
+            ["Danh sách máy ảo"] = rows
         };
 
         await Task.Run(() =>
         {
-            MiniExcel.SaveAs(destinationPath, sampleRows, overwriteFile: true);
+            MiniExcel.SaveAs(destinationPath, workbook, overwriteFile: true);
         });
     }
 
     public async Task ExportVmListAsync(string destinationPath, IEnumerable<VirtualMachineEntry> entries)
     {
-        var rows = entries.Select(v => new Dictionary<string, object>
+        var rows = new List<Dictionary<string, object>>
         {
-            ["No"] = v.No ?? string.Empty,
-            ["IP"] = v.Ip ?? string.Empty,
-            ["Tên máy"] = v.MachineName ?? string.Empty,
-            ["Domain / Workgroup"] = v.DomainOrWorkgroup ?? string.Empty,
-            ["OS"] = v.Os ?? string.Empty,
-            ["User"] = v.Username ?? string.Empty,
-            ["Password"] = v.Password ?? string.Empty,
-            ["TNS"] = v.Tns ?? string.Empty,
-            ["Database Name"] = v.DatabaseName ?? string.Empty,
-            ["Version Oracle"] = v.OracleVersion ?? string.Empty,
-            ["Người kiểm tra"] = v.Tester ?? string.Empty,
-            ["Ghi chú"] = v.Notes ?? string.Empty,
-            ["Ngày hết hạn"] = v.ExpirationDate ?? string.Empty
-        }).ToList();
+            // Dòng 1: Tiêu đề tổng quát (bỏ qua khi import)
+            new()
+            {
+                ["A"] = "DANH SÁCH QUẢN LÝ MÁY ẢO",
+                ["B"] = string.Empty,
+                ["C"] = string.Empty,
+                ["D"] = string.Empty,
+                ["E"] = string.Empty,
+                ["F"] = string.Empty,
+                ["G"] = string.Empty,
+                ["H"] = string.Empty,
+                ["I"] = string.Empty,
+                ["J"] = string.Empty,
+                ["K"] = string.Empty,
+                ["L"] = string.Empty,
+                ["M"] = string.Empty,
+                ["N"] = string.Empty,
+                ["O"] = string.Empty
+            },
+            // Dòng 2: Tiêu đề các cột
+            new()
+            {
+                ["A"] = "No",
+                ["B"] = "IP",
+                ["C"] = "Tên máy",
+                ["D"] = "Domain / Workgroup",
+                ["E"] = "OS",
+                ["F"] = "User",
+                ["G"] = "Password",
+                ["H"] = "TNS",
+                ["I"] = "Database Name",
+                ["J"] = "Version Oracle",
+                ["K"] = "Người kiểm tra",
+                ["L"] = "Ghi chú",
+                ["M"] = "Ngày hết hạn",
+                ["N"] = "DBA User",
+                ["O"] = "Password"
+            }
+        };
+
+        foreach (var v in entries)
+        {
+            rows.Add(new Dictionary<string, object>
+            {
+                ["A"] = v.No ?? string.Empty,
+                ["B"] = v.Ip ?? string.Empty,
+                ["C"] = v.MachineName ?? string.Empty,
+                ["D"] = v.DomainOrWorkgroup ?? string.Empty,
+                ["E"] = v.Os ?? string.Empty,
+                ["F"] = v.Username ?? string.Empty,
+                ["G"] = v.Password ?? string.Empty,
+                ["H"] = v.Tns ?? string.Empty,
+                ["I"] = v.DatabaseName ?? string.Empty,
+                ["J"] = v.OracleVersion ?? string.Empty,
+                ["K"] = v.Tester ?? string.Empty,
+                ["L"] = v.Notes ?? string.Empty,
+                ["M"] = v.ExpirationDate ?? string.Empty,
+                ["N"] = v.DbaUser ?? string.Empty,
+                ["O"] = v.DbaPassword ?? string.Empty
+            });
+        }
+
+        var workbook = new Dictionary<string, object>
+        {
+            ["Danh sách máy ảo"] = rows
+        };
 
         await Task.Run(() =>
         {
-            MiniExcel.SaveAs(destinationPath, rows, overwriteFile: true);
+            MiniExcel.SaveAs(destinationPath, workbook, overwriteFile: true);
         });
     }
 

@@ -50,9 +50,20 @@
                                              Foreground="{DynamicResource AppSectionIconBrush}"/>
                     <TextBlock Text="Chọn Sheet:" VerticalAlignment="Center" FontWeight="SemiBold"
                                Foreground="{DynamicResource AppPrimaryTextBrush}" Margin="0,0,8,0"/>
-                    <ComboBox x:Name="CboSheets" Width="300" Height="32" VerticalAlignment="Center"
+                    <ComboBox x:Name="CboSheets" Width="250" Height="32" VerticalAlignment="Center"
                               DisplayMemberPath="DisplayText" SelectionChanged="CboSheets_SelectionChanged"
-                              Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}" Margin="0,0,10,0"/>
+
+                    <!-- Nút lọc người kiểm tra -->
+                    <Button x:Name="BtnFilterTester" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Click="BtnFilterTester_Click"
+                            ToolTip="Mở màn hình chọn danh sách Người kiểm tra cần import">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="AccountFilterOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"
+                                                     Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                            <TextBlock x:Name="TxtTesterFilterButton" Text="Lọc Người KT" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -79,6 +90,8 @@
                     <DataGridTextColumn Header="Người KT" Binding="{Binding Tester}" Width="90"/>
                     <DataGridTextColumn Header="Ghi Chú" Binding="{Binding Notes}" Width="180"/>
                     <DataGridTextColumn Header="Ngày Hết Hạn" Binding="{Binding ExpirationDate}" Width="110"/>
+                    <DataGridTextColumn Header="DBA User" Binding="{Binding DbaUser}" Width="110" FontWeight="SemiBold"/>
+                    <DataGridTextColumn Header="Password (DBA)" Binding="{Binding DisplayDbaPassword}" Width="110"/>
                 </DataGrid.Columns>
             </DataGrid>
         </materialDesign:Card>

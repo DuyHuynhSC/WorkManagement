@@ -44,6 +44,8 @@ public partial class EditVmDialog : Window
         TxtTns.Text = Entry.Tns;
         TxtDatabaseName.Text = Entry.DatabaseName;
         TxtOracleVersion.Text = Entry.OracleVersion;
+        TxtDbaUser.Text = Entry.DbaUser;
+        TxtDbaPassword.Text = Entry.DbaPassword;
         TxtTester.Text = Entry.Tester;
         TxtNotes.Text = Entry.Notes;
         TxtExpirationDate.Text = string.IsNullOrWhiteSpace(Entry.ExpirationDate) ? "Vô hạn" : Entry.ExpirationDate;
@@ -63,6 +65,8 @@ public partial class EditVmDialog : Window
         Entry.Tns = TxtTns.Text.Trim();
         Entry.DatabaseName = TxtDatabaseName.Text.Trim();
         Entry.OracleVersion = TxtOracleVersion.Text.Trim();
+        Entry.DbaUser = TxtDbaUser.Text.Trim();
+        Entry.DbaPassword = TxtDbaPassword.Text.Trim();
         Entry.Tester = TxtTester.Text.Trim();
         Entry.Notes = TxtNotes.Text.Trim();
         Entry.ExpirationDate = string.IsNullOrWhiteSpace(TxtExpirationDate.Text) ? "Vô hạn" : TxtExpirationDate.Text.Trim();

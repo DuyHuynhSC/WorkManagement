@@ -123,6 +123,7 @@ public partial class VmManagerView : UserControl
                 (vm.Tester != null && vm.Tester.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (vm.Notes != null && vm.Notes.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (vm.ExpirationDate != null && vm.ExpirationDate.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (vm.DbaUser != null && vm.DbaUser.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (vm.No != null && vm.No.Contains(term, StringComparison.OrdinalIgnoreCase));
 
             if (!matches) return false;
@@ -591,6 +592,7 @@ public partial class VmManagerView : UserControl
             "Tester" => vm.Tester ?? string.Empty,
             "Notes" => vm.Notes ?? string.Empty,
             "ExpirationDate" => vm.ExpirationDate ?? string.Empty,
+            "DbaUser" => vm.DbaUser ?? string.Empty,
             _ => string.Empty
         };
     }
@@ -792,6 +794,18 @@ public partial class VmManagerView : UserControl
         }
     }
 
+    private void BtnCopyDbaPass_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is VirtualMachineEntry entry && !string.IsNullOrEmpty(entry.DbaPassword))
+        {
+            try
+            {
+                Clipboard.SetText(entry.DbaPassword);
+            }
+            catch { }
+        }
+    }
+
     private void BtnTogglePassword_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is VirtualMachineEntry entry)
@@ -820,7 +834,12 @@ public partial class VmManagerView : UserControl
                 return;
             }
 
-            var previewDialog = new ExcelImportPreviewDialog(ofd.FileName, sheets) { Owner = parentWindow };
+            var defaultSheet = sheets.FirstOrDefault(s => s.IsRecommended) ?? sheets[0];
+            var testerDialog = new SelectTesterImportDialog(defaultSheet.Entries) { Owner = parentWindow };
+            if (testerDialog.ShowDialog() != true) return;
+
+            var selectedTesters = testerDialog.SelectedRawTesters;
+            var previewDialog = new ExcelImportPreviewDialog(ofd.FileName, sheets, selectedTesters) { Owner = parentWindow };
             if (previewDialog.ShowDialog() == true && previewDialog.ImportedList.Count > 0)
             {
                 var result = _excelService.MergeIntoList(_allEntries, previewDialog.ImportedList, previewDialog.SelectedAction);

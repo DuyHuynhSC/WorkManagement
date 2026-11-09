@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -31,6 +31,8 @@ public class ExcelImportServiceTests
             Assert.Equal("Administrator", first.Username);
             Assert.Equal("D2-20100802", first.Password);
             Assert.Equal("ORCL11GR2K", first.Tns);
+            Assert.Equal("SYSTEM", first.DbaUser);
+            Assert.Equal("manager", first.DbaPassword);
         }
         finally
         {
@@ -307,5 +309,169 @@ public class ExcelImportServiceTests
         {
             if (File.Exists(tempXlsx)) File.Delete(tempXlsx);
         }
+    }
+
+    [Fact]
+    public async Task ReadExcel_Row1Ignored_Row2IsTitle_WithDbaUserAndPasswordAtEnd_SuccessfullyImported()
+    {
+        string tempXlsx = Path.Combine(Path.GetTempPath(), $"vm_custom_row2_dba_{Guid.NewGuid()}.xlsx");
+        try
+        {
+            var rows = new List<Dictionary<string, object>>
+            {
+                // Dòng 1: Tiêu đề báo cáo (Phải bị bỏ qua)
+                new()
+                {
+                    { "A", "BÁO CÁO DANH SÁCH MÁY ẢO TOÀN CÔNG TY" },
+                    { "B", "" }, { "C", "" }, { "D", "" }, { "E", "" },
+                    { "F", "" }, { "G", "" }, { "H", "" }, { "I", "" },
+                    { "J", "" }, { "K", "" }, { "L", "" }, { "M", "" },
+                    { "N", "" }, { "O", "" }
+                },
+                // Dòng 2: Tiêu đề các item với 2 cột DBA User, Password ở cuối cùng
+                new()
+                {
+                    { "A", "No" },
+                    { "B", "IP" },
+                    { "C", "Tên máy" },
+                    { "D", "Domain" },
+                    { "E", "Hệ điều hành" },
+                    { "F", "User" },
+                    { "G", "Password" },
+                    { "H", "TNS" },
+                    { "I", "Database" },
+                    { "J", "Phiên bản Oracle" },
+                    { "K", "Người kiểm tra" },
+                    { "L", "Ghi chú" },
+                    { "M", "Ngày hết hạn" },
+                    { "N", "DBA User" },
+                    { "O", "Password" }
+                },
+                // Dòng 3: Máy của Duy
+                new()
+                {
+                    { "A", "1" },
+                    { "B", "172.16.6.16" },
+                    { "C", "D2-SVR15-6016" },
+                    { "D", "FUJINET.vn" },
+                    { "E", "Windows Server 2008 64bit" },
+                    { "F", "Administrator" },
+                    { "G", "OS_Pass_123" },
+                    { "H", "ORCL11GR2K" },
+                    { "I", "ORCL11GR2K" },
+                    { "J", "11.2.0.4.0" },
+                    { "K", "Duy" },
+                    { "L", "Server chính" },
+                    { "M", "Vô hạn" },
+                    { "N", "SYSTEM" },
+                    { "O", "Dba_Pass_999" }
+                },
+                // Dòng 4: Máy của Huy
+                new()
+                {
+                    { "A", "2" },
+                    { "B", "172.16.6.17" },
+                    { "C", "D2-SVR15-6017" },
+                    { "D", "FUJINET.vn" },
+                    { "E", "Windows Server 2012" },
+                    { "F", "Administrator" },
+                    { "G", "OS_Pass_456" },
+                    { "H", "ORCL12C" },
+                    { "I", "ORCL12C" },
+                    { "J", "12.1.0.2.0" },
+                    { "K", "Huy" },
+                    { "L", "Server test" },
+                    { "M", "2026/12/31" },
+                    { "N", "SYS" },
+                    { "O", "Dba_Pass_888" }
+                }
+            };
+
+            var workbook = new Dictionary<string, object>
+            {
+                { "DanhSachVM", rows }
+            };
+
+            MiniExcelLibs.MiniExcel.SaveAs(tempXlsx, workbook, overwriteFile: true);
+
+            var service = new ExcelImportService();
+            var entries = await service.ReadExcelAsync(tempXlsx);
+
+            Assert.Equal(2, entries.Count);
+
+            var vm1 = entries[0];
+            Assert.Equal("172.16.6.16", vm1.Ip);
+            Assert.Equal("OS_Pass_123", vm1.Password);
+            Assert.Equal("Duy", vm1.Tester);
+            Assert.Equal("SYSTEM", vm1.DbaUser);
+            Assert.Equal("Dba_Pass_999", vm1.DbaPassword);
+
+            var vm2 = entries[1];
+            Assert.Equal("172.16.6.17", vm2.Ip);
+            Assert.Equal("OS_Pass_456", vm2.Password);
+            Assert.Equal("Huy", vm2.Tester);
+            Assert.Equal("SYS", vm2.DbaUser);
+            Assert.Equal("Dba_Pass_888", vm2.DbaPassword);
+        }
+        finally
+        {
+            if (File.Exists(tempXlsx)) File.Delete(tempXlsx);
+        }
+    }
+
+    [Fact]
+    public void FilterByTester_OnlyImportsSelectedTesters()
+    {
+        var entries = new List<VirtualMachineEntry>
+        {
+            new() { Ip = "172.16.6.1", Tester = "Duy", DbaUser = "SYSTEM" },
+            new() { Ip = "172.16.6.2", Tester = "Duy", DbaUser = "SYSTEM" },
+            new() { Ip = "172.16.6.3", Tester = "Huy", DbaUser = "SYS" },
+            new() { Ip = "172.16.6.4", Tester = "", DbaUser = "SYSTEM" },
+        };
+
+        // Giả lập người dùng chỉ chọn tester "Duy"
+        var selectedTesters = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Duy" };
+        var filtered = entries.Where(e => selectedTesters.Contains((e.Tester ?? string.Empty).Trim())).ToList();
+
+        Assert.Equal(2, filtered.Count);
+        Assert.All(filtered, e => Assert.Equal("Duy", e.Tester));
+    }
+
+    [Fact]
+    public void ProjectManager_ResolvesDbaUserAndPassword_ViaVmIp()
+    {
+        var vms = new List<VirtualMachineEntry>
+        {
+            new()
+            {
+                Ip = "172.16.6.16",
+                MachineName = "SVR-16",
+                DbaUser = "SYS_ADMIN",
+                DbaPassword = "DbaPasswordSecret123"
+            }
+        };
+
+        var project = new ProjectEntry
+        {
+            ProjectName = "DuAnOracle",
+            HostServer = "172.16.6.16"
+        };
+
+        // Tra cứu theo IP máy ảo
+        var matchedVm = vms.FirstOrDefault(v => v.Ip.Equals(project.HostServer, StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(matchedVm);
+
+        project.ResolvedDbaUser = matchedVm.DbaUser;
+        project.ResolvedDbaPassword = matchedVm.DbaPassword;
+
+        Assert.Equal("SYS_ADMIN", project.ResolvedDbaUser);
+        Assert.Equal("DbaPasswordSecret123", project.ResolvedDbaPassword);
+        Assert.True(project.IsDbaPasswordMasked);
+        Assert.Equal("••••••••", project.DisplayDbaPassword);
+
+        // Khi bỏ mask
+        project.IsDbaPasswordMasked = false;
+        Assert.Equal("DbaPasswordSecret123", project.DisplayDbaPassword);
     }
 }

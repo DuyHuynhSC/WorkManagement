@@ -21,6 +21,8 @@ public class VirtualMachineEntry : INotifyPropertyChanged
     private string _tester = string.Empty;
     private string _notes = string.Empty;
     private string _expirationDate = "Vô hạn";
+    private string _dbaUser = string.Empty;
+    private string _dbaPassword = string.Empty;
     private bool _isFavorite;
     private bool _isPasswordMasked = true;
     private bool _isSelected;
@@ -109,6 +111,24 @@ public class VirtualMachineEntry : INotifyPropertyChanged
         set => SetField(ref _expirationDate, value);
     }
 
+    public string DbaUser
+    {
+        get => _dbaUser;
+        set => SetField(ref _dbaUser, value);
+    }
+
+    public string DbaPassword
+    {
+        get => _dbaPassword;
+        set
+        {
+            if (SetField(ref _dbaPassword, value))
+            {
+                OnPropertyChanged(nameof(DisplayDbaPassword));
+            }
+        }
+    }
+
     public bool IsFavorite
     {
         get => _isFavorite;
@@ -123,6 +143,7 @@ public class VirtualMachineEntry : INotifyPropertyChanged
             if (SetField(ref _isPasswordMasked, value))
             {
                 OnPropertyChanged(nameof(DisplayPassword));
+                OnPropertyChanged(nameof(DisplayDbaPassword));
             }
         }
     }
@@ -130,6 +151,10 @@ public class VirtualMachineEntry : INotifyPropertyChanged
     public string DisplayPassword => _isPasswordMasked && !string.IsNullOrEmpty(_password)
         ? new string('•', Math.Min(_password.Length, 8))
         : _password;
+
+    public string DisplayDbaPassword => _isPasswordMasked && !string.IsNullOrEmpty(_dbaPassword)
+        ? new string('•', Math.Min(_dbaPassword.Length, 8))
+        : _dbaPassword;
 
     [JsonIgnore]
     public bool IsSelected
@@ -156,6 +181,8 @@ public class VirtualMachineEntry : INotifyPropertyChanged
             Tester = Tester,
             Notes = Notes,
             ExpirationDate = ExpirationDate,
+            DbaUser = DbaUser,
+            DbaPassword = DbaPassword,
             IsFavorite = IsFavorite,
             IsPasswordMasked = IsPasswordMasked,
             IsSelected = IsSelected

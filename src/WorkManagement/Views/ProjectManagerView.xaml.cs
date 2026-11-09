@@ -72,6 +72,8 @@ public partial class ProjectManagerView : UserControl
         var loaded = _projectService.LoadAll();
         _allEntries.AddRange(loaded);
 
+        ResolveDbaFromVm(_allEntries);
+
         _displayEntries.Clear();
         foreach (var item in _allEntries)
         {
@@ -80,6 +82,41 @@ public partial class ProjectManagerView : UserControl
 
         ApplyFilter();
         _ = Dispatcher.BeginInvoke(new Action(AutoFitColumns), DispatcherPriority.Loaded);
+    }
+
+    private void ResolveDbaFromVm(IEnumerable<ProjectEntry> projects)
+    {
+        try
+        {
+            var vms = _vmService.LoadAll();
+            if (vms.Count == 0) return;
+
+            foreach (var p in projects)
+            {
+                string host = p.HostServer?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(host)) continue;
+
+                var matchedVm = vms.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.Ip) && v.Ip.Trim().Equals(host, StringComparison.OrdinalIgnoreCase))
+                    ?? vms.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.MachineName) && v.MachineName.Trim().Equals(host, StringComparison.OrdinalIgnoreCase))
+                    ?? vms.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.Ip) && (v.Ip.Contains(host) || host.Contains(v.Ip)));
+
+                if (matchedVm != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(matchedVm.DbaUser))
+                    {
+                        p.ResolvedDbaUser = matchedVm.DbaUser;
+                    }
+                    if (!string.IsNullOrWhiteSpace(matchedVm.DbaPassword))
+                    {
+                        p.ResolvedDbaPassword = matchedVm.DbaPassword;
+                    }
+                }
+            }
+        }
+        catch { }
     }
 
     private void ApplyFilter()
@@ -127,6 +164,7 @@ public partial class ProjectManagerView : UserControl
                 (p.DbUsers != null && p.DbUsers.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (p.Tablespace != null && p.Tablespace.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (p.PersonInCharge != null && p.PersonInCharge.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (p.ResolvedDbaUser != null && p.ResolvedDbaUser.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (p.Notes != null && p.Notes.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (p.Notes2 != null && p.Notes2.Contains(term, StringComparison.OrdinalIgnoreCase));
 
@@ -705,6 +743,7 @@ public partial class ProjectManagerView : UserControl
             "DbUsers" => p.DbUsers ?? string.Empty,
             "Tablespace" => p.Tablespace ?? string.Empty,
             "PersonInCharge" => p.PersonInCharge ?? string.Empty,
+            "DbaUser" => p.ResolvedDbaUser ?? string.Empty,
             "Notes" => p.Notes ?? string.Empty,
             _ => string.Empty
         };
@@ -722,6 +761,7 @@ public partial class ProjectManagerView : UserControl
         "DbUsers" => "User (DB)",
         "Tablespace" => "Tablespace Cần Xóa",
         "PersonInCharge" => "Người phụ trách",
+        "DbaUser" => "DBA User",
         "Notes" => "Ghi chú",
         _ => colKey
     };
@@ -956,6 +996,22 @@ public partial class ProjectManagerView : UserControl
         if (sender is Button btn && btn.DataContext is ProjectEntry p && !string.IsNullOrEmpty(p.DbUsers))
         {
             try { Clipboard.SetText(p.DbUsers); } catch { }
+        }
+    }
+
+    private void BtnToggleDbaPassword_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is ProjectEntry p)
+        {
+            p.IsDbaPasswordMasked = !p.IsDbaPasswordMasked;
+        }
+    }
+
+    private void BtnCopyDbaPassword_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is ProjectEntry p && !string.IsNullOrEmpty(p.ResolvedDbaPassword))
+        {
+            try { Clipboard.SetText(p.ResolvedDbaPassword); } catch { }
         }
     }
 

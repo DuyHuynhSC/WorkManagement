@@ -126,6 +126,16 @@
                                      Foreground="{DynamicResource AppPrimaryTextBrush}"
                                      Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
 
+                            <TextBox x:Name="TxtDbaUser" Margin="0,0,0,8"
+                                     materialDesign:HintAssist.Hint="DBA User (SYSTEM / SYS)"
+                                     Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
+                            <TextBox x:Name="TxtDbaPassword" Margin="0,0,0,8"
+                                     materialDesign:HintAssist.Hint="Password DBA"
+                                     Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+
                             <TextBox x:Name="TxtTester" Margin="0,0,0,8"
                                      materialDesign:HintAssist.Hint="Người kiểm tra / Quản lý"
                                      Foreground="{DynamicResource AppPrimaryTextBrush}"

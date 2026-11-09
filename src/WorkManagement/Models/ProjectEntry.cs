@@ -23,6 +23,9 @@ public class ProjectEntry : INotifyPropertyChanged
     private string _notes = string.Empty;
     private string _personInCharge = string.Empty;
     private string _notes2 = string.Empty;
+    private string _resolvedDbaUser = string.Empty;
+    private string _resolvedDbaPassword = string.Empty;
+    private bool _isDbaPasswordMasked = true;
     private bool _isSelected;
 
     public string Id
@@ -122,6 +125,51 @@ public class ProjectEntry : INotifyPropertyChanged
     }
 
     [JsonIgnore]
+    public string ResolvedDbaUser
+    {
+        get => string.IsNullOrWhiteSpace(_resolvedDbaUser) ? _dbaUsername : _resolvedDbaUser;
+        set => SetField(ref _resolvedDbaUser, value);
+    }
+
+    [JsonIgnore]
+    public string ResolvedDbaPassword
+    {
+        get => string.IsNullOrEmpty(_resolvedDbaPassword) ? _dbaPassword : _resolvedDbaPassword;
+        set
+        {
+            if (SetField(ref _resolvedDbaPassword, value))
+            {
+                OnPropertyChanged(nameof(DisplayDbaPassword));
+            }
+        }
+    }
+
+    [JsonIgnore]
+    public bool IsDbaPasswordMasked
+    {
+        get => _isDbaPasswordMasked;
+        set
+        {
+            if (SetField(ref _isDbaPasswordMasked, value))
+            {
+                OnPropertyChanged(nameof(DisplayDbaPassword));
+            }
+        }
+    }
+
+    [JsonIgnore]
+    public string DisplayDbaPassword
+    {
+        get
+        {
+            string pass = ResolvedDbaPassword;
+            return _isDbaPasswordMasked && !string.IsNullOrEmpty(pass)
+                ? new string('•', Math.Min(pass.Length, 8))
+                : pass;
+        }
+    }
+
+    [JsonIgnore]
     public bool IsSelected
     {
         get => _isSelected;
@@ -148,6 +196,9 @@ public class ProjectEntry : INotifyPropertyChanged
             Notes = Notes,
             PersonInCharge = PersonInCharge,
             Notes2 = Notes2,
+            ResolvedDbaUser = ResolvedDbaUser,
+            ResolvedDbaPassword = ResolvedDbaPassword,
+            IsDbaPasswordMasked = IsDbaPasswordMasked,
             IsSelected = IsSelected
         };
     }

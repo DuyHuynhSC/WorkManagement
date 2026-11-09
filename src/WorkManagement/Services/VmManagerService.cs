@@ -52,7 +52,12 @@ public class VmManagerService
                         {
                             hadPlaintextPassword = true;
                         }
+                        if (!string.IsNullOrEmpty(vm.DbaPassword) && !SecretProtector.IsEncrypted(vm.DbaPassword))
+                        {
+                            hadPlaintextPassword = true;
+                        }
                         vm.Password = SecretProtector.Unprotect(vm.Password);
+                        vm.DbaPassword = SecretProtector.Unprotect(vm.DbaPassword);
                     }
 
                     // Tự động nâng cấp file JSON cũ (chứa mật khẩu plain-text) sang chuẩn mã hóa DPAPI
@@ -97,6 +102,7 @@ public class VmManagerService
             {
                 var copy = vm.Clone();
                 copy.Password = SecretProtector.Protect(vm.Password);
+                copy.DbaPassword = SecretProtector.Protect(vm.DbaPassword);
                 return copy;
             }).ToList();
 

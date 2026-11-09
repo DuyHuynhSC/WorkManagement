@@ -49,11 +49,14 @@ public partial class ProjectDeleteExecutionDialog : Window
 
         // Điền trước thông tin DBA từ dự án đầu tiên nếu có
         var first = _projectsToDelete.FirstOrDefault();
-        if (first != null && !string.IsNullOrWhiteSpace(first.DbaUsername))
+        string firstDbaUser = !string.IsNullOrWhiteSpace(first?.ResolvedDbaUser) ? first.ResolvedDbaUser : (first?.DbaUsername ?? string.Empty);
+        string firstDbaPass = !string.IsNullOrWhiteSpace(first?.ResolvedDbaPassword) ? first.ResolvedDbaPassword : (first?.DbaPassword ?? string.Empty);
+
+        if (!string.IsNullOrWhiteSpace(firstDbaUser))
         {
-            TxtDbaUser.Text = first.DbaUsername;
-            PbDbaPassword.Password = first.DbaPassword;
-            TxtDbaPasswordRevealed.Text = first.DbaPassword;
+            TxtDbaUser.Text = firstDbaUser;
+            PbDbaPassword.Password = firstDbaPass;
+            TxtDbaPasswordRevealed.Text = firstDbaPass;
         }
         else
         {
@@ -156,8 +159,8 @@ public partial class ProjectDeleteExecutionDialog : Window
             {
                 var proj = _projectsToDelete[i];
                 // Sử dụng mật khẩu riêng của từng dự án nếu có, nếu không thì dùng mật khẩu vừa nhập trên form
-                string userForThis = !string.IsNullOrWhiteSpace(proj.DbaUsername) ? proj.DbaUsername : dbaUser;
-                string passForThis = !string.IsNullOrWhiteSpace(proj.DbaPassword) ? proj.DbaPassword : dbaPass;
+                string userForThis = !string.IsNullOrWhiteSpace(proj.ResolvedDbaUser) ? proj.ResolvedDbaUser : (!string.IsNullOrWhiteSpace(proj.DbaUsername) ? proj.DbaUsername : dbaUser);
+                string passForThis = !string.IsNullOrWhiteSpace(proj.ResolvedDbaPassword) ? proj.ResolvedDbaPassword : (!string.IsNullOrWhiteSpace(proj.DbaPassword) ? proj.DbaPassword : dbaPass);
 
                 bool ok = await _cleanupService.ExecuteProjectCleanupAsync(
                     proj,

@@ -57,9 +57,19 @@ public partial class EditProjectDialog : Window
         TxtPort.Text = string.IsNullOrWhiteSpace(Entry.Port) ? "1521" : Entry.Port;
         TxtDbUsers.Text = Entry.DbUsers;
         TxtTablespace.Text = Entry.Tablespace;
-        TxtDbaUsername.Text = string.IsNullOrWhiteSpace(Entry.DbaUsername) ? "SYSTEM" : Entry.DbaUsername;
-        PbDbaPassword.Password = Entry.DbaPassword;
-        TxtDbaPasswordRevealed.Text = Entry.DbaPassword;
+
+        string host = Entry.HostServer?.Trim() ?? string.Empty;
+        var matchedVm = _availableVms.FirstOrDefault(x => x.Ip.Equals(host, StringComparison.OrdinalIgnoreCase));
+        string defaultDbaUser = (matchedVm != null && !string.IsNullOrWhiteSpace(matchedVm.DbaUser))
+            ? matchedVm.DbaUser
+            : (string.IsNullOrWhiteSpace(Entry.DbaUsername) ? "SYSTEM" : Entry.DbaUsername);
+        string defaultDbaPass = (matchedVm != null && !string.IsNullOrWhiteSpace(matchedVm.DbaPassword))
+            ? matchedVm.DbaPassword
+            : Entry.DbaPassword;
+
+        TxtDbaUsername.Text = defaultDbaUser;
+        PbDbaPassword.Password = defaultDbaPass;
+        TxtDbaPasswordRevealed.Text = defaultDbaPass;
         TxtNotes.Text = Entry.Notes;
         TxtPersonInCharge.Text = Entry.PersonInCharge;
         TxtNotes2.Text = Entry.Notes2;
@@ -84,6 +94,15 @@ public partial class EditProjectDialog : Window
             if (!string.IsNullOrWhiteSpace(matchedVm.Tester) && string.IsNullOrWhiteSpace(TxtPersonInCharge.Text))
             {
                 TxtPersonInCharge.Text = matchedVm.Tester;
+            }
+            if (!string.IsNullOrWhiteSpace(matchedVm.DbaUser))
+            {
+                TxtDbaUsername.Text = matchedVm.DbaUser;
+            }
+            if (!string.IsNullOrWhiteSpace(matchedVm.DbaPassword))
+            {
+                PbDbaPassword.Password = matchedVm.DbaPassword;
+                TxtDbaPasswordRevealed.Text = matchedVm.DbaPassword;
             }
         }
     }
@@ -251,6 +270,8 @@ public partial class EditProjectDialog : Window
         Entry.Tablespace = TxtTablespace.Text.Trim();
         Entry.DbaUsername = string.IsNullOrWhiteSpace(TxtDbaUsername.Text) ? "SYSTEM" : TxtDbaUsername.Text.Trim();
         Entry.DbaPassword = dbaPass;
+        Entry.ResolvedDbaUser = Entry.DbaUsername;
+        Entry.ResolvedDbaPassword = Entry.DbaPassword;
         Entry.Notes = TxtNotes.Text.Trim();
         Entry.PersonInCharge = TxtPersonInCharge.Text.Trim();
         Entry.Notes2 = TxtNotes2.Text.Trim();
