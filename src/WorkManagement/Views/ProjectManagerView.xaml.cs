@@ -1028,6 +1028,70 @@ public partial class ProjectManagerView : UserControl
         }
     }
 
+    private void BtnViewHostVm_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is ProjectEntry p)
+        {
+            string host = p.HostServer?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                MessageBox.Show(Window.GetWindow(this), "Dự án này chưa có thông tin Host Server.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var vmList = _vmService.LoadAll();
+                var matchedVm = vmList.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.Ip) && v.Ip.Trim().Equals(host, StringComparison.OrdinalIgnoreCase))
+                    ?? vmList.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.MachineName) && v.MachineName.Trim().Equals(host, StringComparison.OrdinalIgnoreCase))
+                    ?? vmList.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.Ip) && (v.Ip.Contains(host) || host.Contains(v.Ip)))
+                    ?? vmList.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.MachineName) && (v.MachineName.IndexOf(host, StringComparison.OrdinalIgnoreCase) >= 0 || host.IndexOf(v.MachineName, StringComparison.OrdinalIgnoreCase) >= 0));
+
+                var parentWindow = Window.GetWindow(this);
+                if (matchedVm != null)
+                {
+                    var dialog = new EditVmDialog(matchedVm) { Owner = parentWindow };
+                    if (dialog.ShowDialog() == true)
+                    {
+                        int idx = vmList.FindIndex(x => x.Id == matchedVm.Id);
+                        if (idx >= 0)
+                        {
+                            vmList[idx] = dialog.Entry;
+                        }
+                        _vmService.SaveAll(vmList);
+                        ResolveDbaFromVm(_allEntries);
+                        _collectionView?.Refresh();
+                    }
+                }
+                else
+                {
+                    var newVm = new VirtualMachineEntry
+                    {
+                        Ip = host,
+                        DbaUser = !string.IsNullOrWhiteSpace(p.ResolvedDbaUser) ? p.ResolvedDbaUser : p.DbaUsername,
+                        DbaPassword = !string.IsNullOrWhiteSpace(p.ResolvedDbaPassword) ? p.ResolvedDbaPassword : p.DbaPassword
+                    };
+                    var dialog = new EditVmDialog(newVm) { Owner = parentWindow };
+                    if (dialog.ShowDialog() == true)
+                    {
+                        vmList.Add(dialog.Entry);
+                        _vmService.SaveAll(vmList);
+                        ResolveDbaFromVm(_allEntries);
+                        _collectionView?.Refresh();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Window.GetWindow(this), $"Không thể mở thông tin máy ảo: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
     private void BtnCopyUsers_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is ProjectEntry p && !string.IsNullOrEmpty(p.DbUsers))

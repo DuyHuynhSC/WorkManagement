@@ -331,10 +331,16 @@
                                                                      Foreground="{DynamicResource AppSuccessButtonBackground}"/>
                                         </Button>
                                         <Button Style="{StaticResource MaterialDesignFlatButton}"
-                                                Width="24" Height="24" Padding="0"
+                                                Width="24" Height="24" Padding="0" Margin="0,0,2,0"
                                                 Click="BtnCopyHost_Click" ToolTip="Sao chép IP máy chủ">
                                             <materialDesign:PackIcon Kind="ContentCopy" Width="13" Height="13"
                                                                      Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                                        </Button>
+                                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                                Width="24" Height="24" Padding="0"
+                                                Click="BtnViewHostVm_Click" ToolTip="Xem thông tin máy ảo">
+                                            <materialDesign:PackIcon Kind="DesktopTowerMonitor" Width="14" Height="14"
+                                                                     Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
                                         </Button>
                                     </StackPanel>
                                     <TextBlock Text="{Binding HostServer}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,4,0"/>
