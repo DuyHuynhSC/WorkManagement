@@ -18,6 +18,16 @@
             <DockPanel LastChildFill="True">
                 <!-- Search Box (Right) -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,2,0,2">
+                    <!-- NUT LOC NHANH YEU THICH -->
+                    <Button x:Name="BtnFilterFavoriteOnly" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,0,8,0" Click="BtnFilterFavoriteOnly_Click"
+                            ToolTip="Chỉ hiển thị các máy ảo Yêu thích (★)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon x:Name="IconFilterFavorite" Kind="StarOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"
+                                                     Foreground="#F59E0B"/>
+                            <TextBlock x:Name="TxtFilterFavoriteLabel" Text="Yêu Thích" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
                     <Border Background="{DynamicResource AppCardBackgroundBrush}"
                             BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
                             BorderThickness="1" CornerRadius="6" Padding="6,2" Width="250">
@@ -248,10 +258,15 @@
                             </Style>
                         </DataGridTemplateColumn.CellStyle>
                         <DataGridTemplateColumn.Header>
-                            <materialDesign:PackIcon Kind="Star" Width="17" Height="17"
-                                                     Foreground="#F59E0B"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     ToolTip="Máy ảo Yêu thích (Tích chọn sao để hiển thị trong Tìm Nhanh Ctrl + K)"/>
+                            <Button x:Name="BtnFilter_IsFavorite" Style="{StaticResource MaterialDesignFlatButton}"
+                                    Width="36" Height="28" Padding="0"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Click="BtnColumnFilter_Click" Tag="IsFavorite"
+                                    ToolTip="Lọc máy ảo Yêu thích (★)">
+                                <materialDesign:PackIcon Kind="Star" Width="17" Height="17"
+                                                         Foreground="#F59E0B"
+                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Button>
                         </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>

@@ -59,6 +59,11 @@ public partial class VmManagerView : UserControl
         _filterItemsView = CollectionViewSource.GetDefaultView(_filterItems);
         ListFilterItems.ItemsSource = _filterItemsView;
 
+        if (BtnFilter_IsFavorite != null)
+        {
+            _columnFilterButtons["IsFavorite"] = BtnFilter_IsFavorite;
+        }
+
         LoadData();
     }
 
@@ -86,6 +91,10 @@ public partial class VmManagerView : UserControl
             BtnClearSearch.Visibility = string.IsNullOrEmpty(_currentSearchQuery) ? Visibility.Collapsed : Visibility.Visible;
         }
 
+        bool isFavFiltered = _activeColumnFilters.TryGetValue("IsFavorite", out var favSet) &&
+                             favSet.Count == 1 && favSet.Contains("Yêu thích (★)");
+        UpdateToolbarFavoriteButton(isFavFiltered);
+
         _collectionView?.Refresh();
         UpdateSummary();
         UpdateSelectAllState();
@@ -112,6 +121,10 @@ public partial class VmManagerView : UserControl
         foreach (var term in terms)
         {
             bool matches =
+                (vm.IsFavorite && (term.Equals("fav", StringComparison.OrdinalIgnoreCase) ||
+                                   term.Equals("@fav", StringComparison.OrdinalIgnoreCase) ||
+                                   term.Equals("star", StringComparison.OrdinalIgnoreCase) ||
+                                   "yêu thích".Contains(term, StringComparison.OrdinalIgnoreCase))) ||
                 (vm.Ip != null && vm.Ip.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (vm.MachineName != null && vm.MachineName.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (vm.DomainOrWorkgroup != null && vm.DomainOrWorkgroup.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
@@ -535,6 +548,7 @@ public partial class VmManagerView : UserControl
             UpdateColumnButtonVisual(key, false);
         }
         _activeColumnFilters.Clear();
+        UpdateToolbarFavoriteButton(false);
         ApplyFilter();
     }
 
@@ -565,10 +579,20 @@ public partial class VmManagerView : UserControl
         {
             if (btn.Content is MaterialDesignThemes.Wpf.PackIcon icon)
             {
-                icon.Kind = isActive ? MaterialDesignThemes.Wpf.PackIconKind.Filter : MaterialDesignThemes.Wpf.PackIconKind.FilterOutline;
-                icon.Foreground = isActive
-                    ? (Brush)FindResource("AppPrimaryButtonBackground")
-                    : (Brush)FindResource("AppSecondaryTextBrush");
+                if (colKey.Equals("IsFavorite", StringComparison.OrdinalIgnoreCase))
+                {
+                    icon.Kind = isActive ? MaterialDesignThemes.Wpf.PackIconKind.Filter : MaterialDesignThemes.Wpf.PackIconKind.Star;
+                    icon.Foreground = isActive
+                        ? (Brush)FindResource("AppPrimaryButtonBackground")
+                        : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F59E0B"));
+                }
+                else
+                {
+                    icon.Kind = isActive ? MaterialDesignThemes.Wpf.PackIconKind.Filter : MaterialDesignThemes.Wpf.PackIconKind.FilterOutline;
+                    icon.Foreground = isActive
+                        ? (Brush)FindResource("AppPrimaryButtonBackground")
+                        : (Brush)FindResource("AppSecondaryTextBrush");
+                }
             }
             string name = GetColumnDisplayName(colKey);
             btn.ToolTip = isActive
@@ -581,6 +605,7 @@ public partial class VmManagerView : UserControl
     {
         return colKey switch
         {
+            "IsFavorite" => vm.IsFavorite ? "Yêu thích (★)" : "Bình thường",
             "Ip" => vm.Ip ?? string.Empty,
             "MachineName" => vm.MachineName ?? string.Empty,
             "DomainOrWorkgroup" => vm.DomainOrWorkgroup ?? string.Empty,
@@ -599,6 +624,7 @@ public partial class VmManagerView : UserControl
 
     private static string GetColumnDisplayName(string colKey) => colKey switch
     {
+        "IsFavorite" => "Yêu Thích",
         "Ip" => "Địa Chỉ IP",
         "MachineName" => "Tên Máy",
         "DomainOrWorkgroup" => "Domain / Workgroup",
@@ -742,6 +768,61 @@ public partial class VmManagerView : UserControl
         if (sender is Button btn && btn.DataContext is VirtualMachineEntry entry)
         {
             await ConnectToVmAsync(entry);
+        }
+    }
+
+    private void BtnFilterFavoriteOnly_Click(object sender, RoutedEventArgs e)
+    {
+        bool isFilteringFav = _activeColumnFilters.TryGetValue("IsFavorite", out var set) &&
+                              set.Count == 1 && set.Contains("Yêu thích (★)");
+
+        if (isFilteringFav)
+        {
+            _activeColumnFilters.Remove("IsFavorite");
+            UpdateColumnButtonVisual("IsFavorite", false);
+            UpdateToolbarFavoriteButton(false);
+        }
+        else
+        {
+            _activeColumnFilters["IsFavorite"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Yêu thích (★)" };
+            UpdateColumnButtonVisual("IsFavorite", true);
+            UpdateToolbarFavoriteButton(true);
+        }
+
+        ApplyFilter();
+    }
+
+    private void UpdateToolbarFavoriteButton(bool isActive)
+    {
+        if (BtnFilterFavoriteOnly == null) return;
+
+        if (isActive)
+        {
+            BtnFilterFavoriteOnly.Style = (Style)FindResource("AppPrimaryButtonStyle");
+            if (IconFilterFavorite != null)
+            {
+                IconFilterFavorite.Kind = MaterialDesignThemes.Wpf.PackIconKind.Star;
+                IconFilterFavorite.Foreground = Brushes.White;
+            }
+            if (TxtFilterFavoriteLabel != null)
+            {
+                TxtFilterFavoriteLabel.Text = "Đang Lọc: Yêu Thích";
+            }
+            BtnFilterFavoriteOnly.ToolTip = "Đang chỉ hiển thị máy ảo Yêu thích. Nhấn để hiển thị tất cả.";
+        }
+        else
+        {
+            BtnFilterFavoriteOnly.Style = (Style)FindResource("AppOutlinedButtonStyle");
+            if (IconFilterFavorite != null)
+            {
+                IconFilterFavorite.Kind = MaterialDesignThemes.Wpf.PackIconKind.StarOutline;
+                IconFilterFavorite.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F59E0B"));
+            }
+            if (TxtFilterFavoriteLabel != null)
+            {
+                TxtFilterFavoriteLabel.Text = "Yêu Thích";
+            }
+            BtnFilterFavoriteOnly.ToolTip = "Chỉ hiển thị các máy ảo Yêu thích (★)";
         }
     }
 
