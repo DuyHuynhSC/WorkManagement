@@ -154,12 +154,21 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                        <Button x:Name="BtnCopySqlOnly" Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="28" Padding="10,0" Margin="0,0,8,0" Click="BtnCopySqlOnly_Click"
+                                ToolTip="Chỉ sao chép các câu lệnh SQL vào Clipboard (bỏ qua lời giải thích)">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="CodeTags" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock Text="Chép Lệnh SQL" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
                         <Button x:Name="BtnCopyScript" Style="{StaticResource AppOutlinedButtonStyle}"
                                 Height="28" Padding="10,0" Margin="0,0,8,0" Click="BtnCopyScript_Click"
-                                ToolTip="Sao chép toàn bộ mã lệnh SQL vào Clipboard">
+                                ToolTip="Sao chép toàn bộ nội dung (kèm chú thích) vào Clipboard">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="ContentCopy" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="Sao Chép" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="Sao Chép Tất Cả" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
@@ -176,21 +185,24 @@
 
                 <!-- SQL Editor / Viewer -->
                 <Border Grid.Row="1" Style="{StaticResource AppTerminalBorderStyle}" Padding="8">
-                    <TextBox x:Name="TxtGeneratedScript"
-                             Style="{x:Null}"
-                             IsReadOnly="False"
-                             BorderThickness="0"
-                             Background="{DynamicResource AppTerminalBackgroundBrush}"
-                             Foreground="{DynamicResource AppTerminalForegroundBrush}"
-                             CaretBrush="{DynamicResource AppAccentHighlightBrush}"
-                             SelectionBrush="{DynamicResource AppAccentHighlightBrush}"
-                             FontFamily="Consolas, 'Courier New', monospace"
-                             FontSize="12.5"
-                             TextWrapping="Wrap"
-                             AcceptsReturn="True"
-                             VerticalScrollBarVisibility="Auto"
-                             HorizontalScrollBarVisibility="Auto"
-                             Text="-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng...&#x0a;"/>
+                    <RichTextBox x:Name="RtbGeneratedScript"
+                                 Style="{x:Null}"
+                                 IsReadOnly="False"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource AppTerminalForegroundBrush}"
+                                 CaretBrush="{DynamicResource AppAccentHighlightBrush}"
+                                 FontFamily="Consolas, 'Cascadia Code', 'Courier New', monospace"
+                                 FontSize="12.5"
+                                 AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto">
+                        <FlowDocument PageWidth="2500" TextAlignment="Left">
+                            <Paragraph Margin="0">
+                                <Run Text="-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng..."/>
+                            </Paragraph>
+                        </FlowDocument>
+                    </RichTextBox>
                 </Border>
 
                 <!-- Ghi chú / Lời khuyên của AI -->

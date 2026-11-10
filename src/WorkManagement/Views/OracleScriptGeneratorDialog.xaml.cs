@@ -33,6 +33,19 @@ public partial class OracleScriptGeneratorDialog : Window
         }
 
         UpdateContextSummary();
+        SqlSyntaxHighlighter.Highlight(RtbGeneratedScript, "-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng...", IsCurrentThemeDark());
+    }
+
+    private bool IsCurrentThemeDark()
+    {
+        var settings = _configService.Load();
+        var kind = ThemeService.ParseTheme(settings.ThemeName, settings.IsDarkTheme);
+        return ThemeService.GetThemeOption(kind).IsDarkBase;
+    }
+
+    private string GetCurrentScriptText()
+    {
+        return SqlSyntaxHighlighter.GetPlainText(RtbGeneratedScript);
     }
 
     private ProjectEntry? CurrentProject => CboProjects.SelectedItem as ProjectEntry;
@@ -116,7 +129,8 @@ public partial class OracleScriptGeneratorDialog : Window
             var result = await _aiClient.GenerateOracleScriptAsync(settings.Ai, proj, prompt);
             if (result.Success && !string.IsNullOrWhiteSpace(result.Script))
             {
-                TxtGeneratedScript.Text = result.Script;
+                bool isDark = IsCurrentThemeDark();
+                SqlSyntaxHighlighter.Highlight(RtbGeneratedScript, result.Script, isDark);
                 TxtExplanation.Text = !string.IsNullOrWhiteSpace(result.Explanation)
                     ? result.Explanation
                     : "Đã sinh script Oracle thành công theo ngữ cảnh dự án.";
@@ -141,9 +155,23 @@ public partial class OracleScriptGeneratorDialog : Window
         }
     }
 
+    private void BtnCopySqlOnly_Click(object sender, RoutedEventArgs e)
+    {
+        string fullText = GetCurrentScriptText();
+        if (string.IsNullOrWhiteSpace(fullText))
+        {
+            MessageBox.Show(this, "Chưa có nội dung script để sao chép.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        string pureSql = SqlSyntaxHighlighter.ExtractPureSql(fullText);
+        Clipboard.SetText(pureSql);
+        MessageBox.Show(this, "Đã trích xuất và sao chép các câu lệnh SQL vào Clipboard!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
     private void BtnCopyScript_Click(object sender, RoutedEventArgs e)
     {
-        string script = TxtGeneratedScript.Text;
+        string script = GetCurrentScriptText();
         if (string.IsNullOrWhiteSpace(script))
         {
             MessageBox.Show(this, "Chưa có nội dung script để sao chép.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -151,17 +179,19 @@ public partial class OracleScriptGeneratorDialog : Window
         }
 
         Clipboard.SetText(script);
-        MessageBox.Show(this, "Đã sao chép mã script vào Clipboard!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, "Đã sao chép toàn bộ nội dung vào Clipboard!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void BtnSaveScript_Click(object sender, RoutedEventArgs e)
     {
-        string script = TxtGeneratedScript.Text;
-        if (string.IsNullOrWhiteSpace(script))
+        string rawScript = GetCurrentScriptText();
+        if (string.IsNullOrWhiteSpace(rawScript))
         {
             MessageBox.Show(this, "Chưa có nội dung script để lưu.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
+
+        string scriptToSave = SqlSyntaxHighlighter.ExtractPureSql(rawScript);
 
         string projName = CurrentProject?.ProjectName ?? "OracleScript";
         var sfd = new SaveFileDialog
@@ -175,7 +205,7 @@ public partial class OracleScriptGeneratorDialog : Window
         {
             try
             {
-                File.WriteAllText(sfd.FileName, script, System.Text.Encoding.UTF8);
+                File.WriteAllText(sfd.FileName, scriptToSave, System.Text.Encoding.UTF8);
                 MessageBox.Show(this, $"Đã lưu file thành công tại:\n{sfd.FileName}", "Lưu Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
