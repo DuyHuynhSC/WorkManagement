@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using WorkManagement.Models;
@@ -14,7 +14,7 @@ public class RemoteDesktopService
         _logger = logger ?? new AppLogger();
     }
 
-    public static string FormatUsername(string username, string? machineName)
+    public static string FormatUsername(string username, string? hostOrIp)
     {
         if (string.IsNullOrWhiteSpace(username)) return string.Empty;
 
@@ -24,9 +24,9 @@ public class RemoteDesktopService
             return username.Trim();
         }
 
-        if (!string.IsNullOrWhiteSpace(machineName))
+        if (!string.IsNullOrWhiteSpace(hostOrIp))
         {
-            return $"{machineName.Trim()}\\{username.Trim()}";
+            return $"{hostOrIp.Trim()}\\{username.Trim()}";
         }
 
         return username.Trim();
@@ -43,8 +43,8 @@ public class RemoteDesktopService
         try
         {
             string ip = vm.Ip.Trim();
-            // Lấy [Tên máy] + "\" + [User] theo yêu cầu
-            string user = FormatUsername(vm.Username, vm.MachineName);
+            // Lấy [Địa chỉ IP] + "\" + [User] theo yêu cầu
+            string user = FormatUsername(vm.Username, ip);
             string password = vm.Password ?? string.Empty;
 
             if (!string.IsNullOrEmpty(user) && !string.IsNullOrEmpty(password))

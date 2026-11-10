@@ -85,15 +85,6 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="BtnDownloadTemplate" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnDownloadTemplate_Click"
-                            ToolTip="Xuất file mẫu Excel để nhập liệu">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FileDownloadOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="File Mẫu" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
                     <!-- AUTOFIT CỘT BUTTON -->
                     <Button x:Name="BtnAutoFitColumns" Style="{StaticResource AppOutlinedButtonStyle}"
                             Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnAutoFitColumns_Click"
@@ -123,12 +114,6 @@
                             <TextBlock Text="Xóa Tất Cả" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"
                                        Foreground="{DynamicResource AppDangerButtonBackground}"/>
                         </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnRefresh" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnRefresh_Click"
-                            ToolTip="Tải lại danh sách từ bộ nhớ">
-                        <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center"/>
                     </Button>
 
                     <!-- NÚT BỎ TOÀN BỘ BỘ LỌC CỘT (EXCEL FILTER RESET) -->

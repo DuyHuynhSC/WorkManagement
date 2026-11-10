@@ -8,12 +8,13 @@ public class RemoteDesktopAndSchedulerServiceTests
     [Theory]
     [InlineData("Administrator", "D2-SVR15-6016", "D2-SVR15-6016\\Administrator")]
     [InlineData("User01", "D2-VM-7023", "D2-VM-7023\\User01")]
+    [InlineData("Administrator", "192.168.1.100", "192.168.1.100\\Administrator")]
     [InlineData("User01", "", "User01")]
     [InlineData("D2-SVR\\Admin", "D2-SVR", "D2-SVR\\Admin")]
     [InlineData("admin@domain.com", "D2-SVR", "admin@domain.com")]
-    public void FormatUsername_FormatsProperlyForMachineNameAndUser(string user, string machineName, string expected)
+    public void FormatUsername_FormatsProperlyForHostOrIpAndUser(string user, string hostOrIp, string expected)
     {
-        string actual = RemoteDesktopService.FormatUsername(user, machineName);
+        string actual = RemoteDesktopService.FormatUsername(user, hostOrIp);
         Assert.Equal(expected, actual);
     }
 
