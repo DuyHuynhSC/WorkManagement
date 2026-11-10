@@ -131,9 +131,22 @@ public partial class OracleScriptGeneratorDialog : Window
             {
                 bool isDark = IsCurrentThemeDark();
                 SqlSyntaxHighlighter.Highlight(RtbGeneratedScript, result.Script, isDark);
-                TxtExplanation.Text = !string.IsNullOrWhiteSpace(result.Explanation)
+
+                string explanation = !string.IsNullOrWhiteSpace(result.Explanation)
                     ? result.Explanation
                     : "Đã sinh script Oracle thành công theo ngữ cảnh dự án.";
+
+                TxtExplanation.Text = explanation;
+                BadgeAdviceCount.Visibility = !string.IsNullOrWhiteSpace(result.Explanation)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
+                string firstLine = explanation.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+                TxtQuickNote.Text = string.IsNullOrWhiteSpace(firstLine)
+                    ? "Đã hoàn thành sinh script. Nhấn 'Xem hướng dẫn chi tiết & cảnh báo' để xem đầy đủ."
+                    : firstLine;
+
+                SwitchTab(true);
             }
             else
             {
@@ -213,6 +226,48 @@ public partial class OracleScriptGeneratorDialog : Window
                 MessageBox.Show(this, $"Lỗi khi lưu file: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+    }
+
+    private void BtnTabSql_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchTab(true);
+    }
+
+    private void BtnTabAdvice_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchTab(false);
+    }
+
+    private void SwitchTab(bool showSql)
+    {
+        GridTabSql.Visibility = showSql ? Visibility.Visible : Visibility.Collapsed;
+        GridTabAdvice.Visibility = showSql ? Visibility.Collapsed : Visibility.Visible;
+        PanelSqlActions.Visibility = showSql ? Visibility.Visible : Visibility.Collapsed;
+        PanelAdviceActions.Visibility = showSql ? Visibility.Collapsed : Visibility.Visible;
+
+        if (showSql)
+        {
+            BtnTabSql.Style = (Style)FindResource("AppPrimaryButtonStyle");
+            BtnTabAdvice.Style = (Style)FindResource("AppOutlinedButtonStyle");
+        }
+        else
+        {
+            BtnTabSql.Style = (Style)FindResource("AppOutlinedButtonStyle");
+            BtnTabAdvice.Style = (Style)FindResource("AppPrimaryButtonStyle");
+        }
+    }
+
+    private void BtnCopyAdvice_Click(object sender, RoutedEventArgs e)
+    {
+        string advice = TxtExplanation.Text;
+        if (string.IsNullOrWhiteSpace(advice))
+        {
+            MessageBox.Show(this, "Chưa có nội dung hướng dẫn để sao chép.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        Clipboard.SetText(advice);
+        MessageBox.Show(this, "Đã sao chép hướng dẫn và khuyến nghị an toàn vào Clipboard!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)

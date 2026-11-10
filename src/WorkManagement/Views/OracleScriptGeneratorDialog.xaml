@@ -134,28 +134,44 @@
             </StackPanel>
         </materialDesign:Card>
 
-        <!-- ROW 2: GENERATED SQL SCRIPT & EXPLANATION -->
-        <materialDesign:Card Grid.Row="2" Margin="0,0,0,10" Padding="10"
+        <!-- ROW 2: GENERATED SQL SCRIPT & EXPLANATION (TABBED VIEW) -->
+        <materialDesign:Card Grid.Row="2" Margin="0,0,0,10" Padding="12,10"
                              Background="{DynamicResource AppCardBackgroundBrush}"
                              BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/> <!-- Top Segmented Tabs & Action Buttons -->
+                    <RowDefinition Height="*"/>    <!-- Active Tab Content -->
                 </Grid.RowDefinitions>
 
-                <!-- Toolbar Script -->
-                <DockPanel Grid.Row="0" Margin="2,0,2,8">
+                <!-- Row 0: Navigation Header & Action Buttons -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <!-- Segmented Tab Switcher (Left) -->
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                        <materialDesign:PackIcon Kind="CodeBraces" Width="16" Height="16"
-                                                 Foreground="{DynamicResource AppSectionIconBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Mã Lệnh Oracle SQL / PL*SQL:" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                        <Button x:Name="BtnTabSql" Style="{StaticResource AppPrimaryButtonStyle}"
+                                Height="30" Padding="12,0" Margin="0,0,6,0" Click="BtnTabSql_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="CodeBraces" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="Mã Lệnh Oracle SQL" FontWeight="Bold" FontSize="11.5" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="BtnTabAdvice" Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="30" Padding="12,0" Click="BtnTabAdvice_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ShieldAlertOutline" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="Hướng Dẫn &amp; Cảnh Báo An Toàn" FontWeight="Bold" FontSize="11.5" VerticalAlignment="Center"/>
+                                <Border x:Name="BadgeAdviceCount" Background="#DC2626" CornerRadius="8" Padding="5,1" Margin="6,0,0,0" Visibility="Collapsed">
+                                    <TextBlock Text="AI" Foreground="White" FontSize="9.5" FontWeight="Bold"/>
+                                </Border>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                    <!-- Action Buttons for Tab 1 (Right) -->
+                    <StackPanel x:Name="PanelSqlActions" Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
                         <Button x:Name="BtnCopySqlOnly" Style="{StaticResource AppOutlinedButtonStyle}"
-                                Height="28" Padding="10,0" Margin="0,0,8,0" Click="BtnCopySqlOnly_Click"
+                                Height="28" Padding="10,0" Margin="0,0,6,0" Click="BtnCopySqlOnly_Click"
                                 ToolTip="Chỉ sao chép các câu lệnh SQL vào Clipboard (bỏ qua lời giải thích)">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="CodeTags" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
@@ -164,8 +180,8 @@
                         </Button>
 
                         <Button x:Name="BtnCopyScript" Style="{StaticResource AppOutlinedButtonStyle}"
-                                Height="28" Padding="10,0" Margin="0,0,8,0" Click="BtnCopyScript_Click"
-                                ToolTip="Sao chép toàn bộ nội dung (kèm chú thích) vào Clipboard">
+                                Height="28" Padding="10,0" Margin="0,0,6,0" Click="BtnCopyScript_Click"
+                                ToolTip="Sao chép toàn bộ nội dung mã và chú thích vào Clipboard">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="ContentCopy" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                 <TextBlock Text="Sao Chép Tất Cả" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -181,37 +197,90 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
+
+                    <!-- Action Buttons for Tab 2 (Right) -->
+                    <StackPanel x:Name="PanelAdviceActions" Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" Visibility="Collapsed">
+                        <Button x:Name="BtnCopyAdvice" Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="28" Padding="10,0" Click="BtnCopyAdvice_Click"
+                                ToolTip="Sao chép toàn bộ nội dung hướng dẫn DBA">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ContentCopy" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock Text="Sao Chép Hướng Dẫn" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </DockPanel>
 
-                <!-- SQL Editor / Viewer -->
-                <Border Grid.Row="1" Style="{StaticResource AppTerminalBorderStyle}" Padding="8">
-                    <RichTextBox x:Name="RtbGeneratedScript"
-                                 Style="{x:Null}"
-                                 IsReadOnly="False"
-                                 BorderThickness="0"
-                                 Background="Transparent"
-                                 Foreground="{DynamicResource AppTerminalForegroundBrush}"
-                                 CaretBrush="{DynamicResource AppAccentHighlightBrush}"
-                                 FontFamily="Consolas, 'Cascadia Code', 'Courier New', monospace"
-                                 FontSize="12.5"
-                                 AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto">
-                        <FlowDocument PageWidth="2500" TextAlignment="Left">
-                            <Paragraph Margin="0">
-                                <Run Text="-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng..."/>
-                            </Paragraph>
-                        </FlowDocument>
-                    </RichTextBox>
-                </Border>
+                <!-- TAB 1: SQL SCRIPT TERMINAL VIEWER -->
+                <Grid x:Name="GridTabSql" Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- Ghi chú / Lời khuyên của AI -->
-                <Border Grid.Row="2" Background="{DynamicResource AppSecondarySubtleBackgroundBrush}"
-                        CornerRadius="4" Padding="8,6" Margin="0,8,0,0">
-                    <TextBlock x:Name="TxtExplanation" Text="Ghi chú: Luôn kiểm tra các câu lệnh DROP và đảm bảo đã sao lưu trước khi thực thi trên môi trường Production."
-                               FontSize="11" FontStyle="Italic" TextWrapping="Wrap"
-                               Foreground="{DynamicResource AppSecondaryTextBrush}"/>
-                </Border>
+                    <!-- Full-size Dark Terminal Editor -->
+                    <Border Grid.Row="0" Style="{StaticResource AppTerminalBorderStyle}" Padding="8">
+                        <RichTextBox x:Name="RtbGeneratedScript"
+                                     Style="{x:Null}"
+                                     IsReadOnly="False"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     Foreground="{DynamicResource AppTerminalForegroundBrush}"
+                                     CaretBrush="{DynamicResource AppAccentHighlightBrush}"
+                                     FontFamily="Consolas, 'Cascadia Code', 'Courier New', monospace"
+                                     FontSize="12.5"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto">
+                            <FlowDocument PageWidth="2500" TextAlignment="Left">
+                                <Paragraph Margin="0">
+                                    <Run Text="-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng..."/>
+                                </Paragraph>
+                            </FlowDocument>
+                        </RichTextBox>
+                    </Border>
+
+                    <!-- Bottom Quick Notice with Link to Tab 2 -->
+                    <Border Grid.Row="1" Background="{DynamicResource AppSecondarySubtleBackgroundBrush}"
+                            CornerRadius="4" Padding="10,6" Margin="0,6,0,0">
+                        <DockPanel LastChildFill="True">
+                            <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                    DockPanel.Dock="Right" Padding="8,0" Height="24"
+                                    Click="BtnTabAdvice_Click" ToolTip="Mở tab hướng dẫn &amp; cảnh báo an toàn">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Xem hướng dẫn chi tiết &amp; cảnh báo" FontSize="11" FontWeight="Bold"
+                                               Foreground="{DynamicResource AppAccentHighlightBrush}"/>
+                                    <materialDesign:PackIcon Kind="ArrowRight" Width="12" Height="12" VerticalAlignment="Center" Margin="4,0,0,0"
+                                                             Foreground="{DynamicResource AppAccentHighlightBrush}"/>
+                                </StackPanel>
+                            </Button>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <materialDesign:PackIcon Kind="ShieldAlertOutline" Width="14" Height="14"
+                                                         Foreground="#EAB308" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock x:Name="TxtQuickNote" Text="Khuyến nghị: Luôn kiểm tra kỹ các câu lệnh DROP và đảm bảo đã có bản sao lưu trước khi thực thi."
+                                           FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource AppPrimaryTextBrush}"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 2: GUIDANCE & SAFETY ADVISOR -->
+                <Grid x:Name="GridTabAdvice" Grid.Row="1" Visibility="Collapsed">
+                    <Border Background="{DynamicResource AppSecondarySubtleBackgroundBrush}"
+                            BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="12,10">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <TextBox x:Name="TxtExplanation" IsReadOnly="True"
+                                     BorderThickness="0" Background="Transparent"
+                                     Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                     FontSize="12.5"
+                                     FontFamily="Consolas, 'Segoe UI', sans-serif"
+                                     TextWrapping="Wrap"
+                                     Text="Chưa có hướng dẫn hoặc cảnh báo từ AI. Nhấn 'Sinh Script Bằng AI' để nhận phân tích chi tiết."/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
             </Grid>
         </materialDesign:Card>
 
