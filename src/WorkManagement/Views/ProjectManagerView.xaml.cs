@@ -786,6 +786,19 @@ public partial class ProjectManagerView : UserControl
             var imported = await _excelService.ReadProjectsFromExcelAsync(ofd.FileName);
             if (imported.Count == 0)
             {
+                var cfg = new ConfigService().Load();
+                if (cfg.Ai != null && cfg.Ai.IsEnabled && !string.IsNullOrWhiteSpace(cfg.Ai.BaseUrl))
+                {
+                    var (aiEntries, aiResult) = await _excelService.ReadProjectsWithAiAsync(ofd.FileName, cfg.Ai);
+                    if (aiResult.Success && aiEntries.Count > 0)
+                    {
+                        imported = aiEntries;
+                    }
+                }
+            }
+
+            if (imported.Count == 0)
+            {
                 MessageBox.Show(parent, "Không tìm thấy dữ liệu hợp lệ trong file Excel đã chọn.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }

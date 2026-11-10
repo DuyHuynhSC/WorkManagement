@@ -79,7 +79,8 @@ public class ConfigService
 
             if (IsPlaintextNonEmpty(raw.Password) ||
                 IsPlaintextNonEmpty(raw.ProxyPassword) ||
-                IsPlaintextNonEmpty(raw.SmtpPassword))
+                IsPlaintextNonEmpty(raw.SmtpPassword) ||
+                (raw.Ai != null && IsPlaintextNonEmpty(raw.Ai.ApiKey)))
             {
                 return true;
             }
@@ -110,6 +111,10 @@ public class ConfigService
         settings.Password = SecretProtector.Unprotect(settings.Password);
         settings.ProxyPassword = SecretProtector.Unprotect(settings.ProxyPassword);
         settings.SmtpPassword = SecretProtector.Unprotect(settings.SmtpPassword);
+        if (settings.Ai != null)
+        {
+            settings.Ai.ApiKey = SecretProtector.Unprotect(settings.Ai.ApiKey);
+        }
 
         if (settings.Profiles != null)
         {
@@ -156,7 +161,17 @@ public class ConfigService
             SenderEmail = source.SenderEmail,
             RecipientEmails = new List<string>(source.RecipientEmails ?? new List<string>()),
             AutoSendEmailOnPreview = source.AutoSendEmailOnPreview,
-            Profiles = new List<FtpSiteProfile>()
+            Profiles = new List<FtpSiteProfile>(),
+            Ai = source.Ai != null ? new AiSettings
+            {
+                IsEnabled = source.Ai.IsEnabled,
+                BaseUrl = source.Ai.BaseUrl,
+                ApiKey = SecretProtector.Protect(source.Ai.ApiKey),
+                ModelName = source.Ai.ModelName,
+                TimeoutSeconds = source.Ai.TimeoutSeconds,
+                BypassProxy = source.Ai.BypassProxy,
+                Temperature = source.Ai.Temperature
+            } : new AiSettings()
         };
 
         if (source.Profiles != null)

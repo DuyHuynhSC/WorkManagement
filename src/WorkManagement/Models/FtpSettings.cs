@@ -39,4 +39,7 @@ public class FtpSettings
     public bool AutoSendEmailOnPreview { get; set; } = false;
 
     public List<FtpSiteProfile> Profiles { get; set; } = new();
+
+    // AI Integration Settings (OpenAI-compatible)
+    public AiSettings Ai { get; set; } = new();
 }

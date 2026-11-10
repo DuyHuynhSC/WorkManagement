@@ -71,90 +71,183 @@ public class ProjectExcelService
                 return FallbackReadWithHeader(filePath);
             }
 
-            // Đọc dữ liệu từ dòng kế tiếp sau Title (với dòng 3 là Title thì bắt đầu từ dòng 4, tức index 3)
-            int startDataRow = titleRowIndex + 1;
-            for (int i = startDataRow; i < rawRows.Count; i++)
+            return ExtractProjectEntries(rawRows, titleRowIndex, colMapping);
+        });
+    }
+
+    public async Task<(List<ProjectEntry> Entries, AiSchemaMappingResult AiResult)> ReadProjectsWithAiAsync(
+        string filePath,
+        AiSettings aiSettings,
+        OpenAiClientService? aiClient = null)
+    {
+        var aiService = aiClient ?? new OpenAiClientService();
+        var entries = new List<ProjectEntry>();
+
+        if (!File.Exists(filePath))
+        {
+            return (entries, new AiSchemaMappingResult { Success = false, ErrorMessage = "Không tìm thấy file Excel." });
+        }
+
+        List<IDictionary<string, object>> rawRows;
+        try
+        {
+            rawRows = MiniExcel.Query(filePath, useHeaderRow: false)
+                .OfType<IDictionary<string, object>>()
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            return (entries, new AiSchemaMappingResult { Success = false, ErrorMessage = $"Lỗi khi đọc file Excel: {ex.Message}" });
+        }
+
+        if (rawRows.Count == 0)
+        {
+            return (entries, new AiSchemaMappingResult { Success = false, ErrorMessage = "File Excel không có dữ liệu." });
+        }
+
+        int candidateHeaderIdx = 2;
+        if (rawRows.Count < 3) candidateHeaderIdx = 0;
+
+        int maxCells = 0;
+        int checkLimit = Math.Min(5, rawRows.Count);
+        for (int i = 0; i < checkLimit; i++)
+        {
+            int nonNullCount = rawRows[i].Values.Count(v => v != null && !string.IsNullOrWhiteSpace(v.ToString()));
+            if (nonNullCount > maxCells)
             {
-                var row = rawRows[i];
-                if (row.Values.All(v => v == null || string.IsNullOrWhiteSpace(v.ToString())))
+                maxCells = nonNullCount;
+                candidateHeaderIdx = i;
+            }
+        }
+
+        var candidateHeaders = new Dictionary<string, string>();
+        foreach (var kv in rawRows[candidateHeaderIdx])
+        {
+            if (kv.Value != null && !string.IsNullOrWhiteSpace(kv.Value.ToString()))
+            {
+                candidateHeaders[kv.Key] = kv.Value.ToString()!.Trim();
+            }
+        }
+
+        var sampleRows = new List<Dictionary<string, string>>();
+        int sampleLimit = Math.Min(rawRows.Count, candidateHeaderIdx + 4);
+        for (int i = candidateHeaderIdx + 1; i < sampleLimit; i++)
+        {
+            var rowDict = new Dictionary<string, string>();
+            foreach (var kv in rawRows[i])
+            {
+                if (kv.Value != null && !string.IsNullOrWhiteSpace(kv.Value.ToString()))
                 {
-                    continue;
+                    rowDict[kv.Key] = kv.Value.ToString()!.Trim();
                 }
+            }
+            if (rowDict.Count > 0)
+            {
+                sampleRows.Add(rowDict);
+            }
+        }
 
-                var entry = new ProjectEntry();
+        var aiResult = await aiService.InferProjectSchemaMappingAsync(aiSettings, candidateHeaders, sampleRows);
+        if (aiResult.Success && aiResult.ColumnMapping.Count > 0)
+        {
+            int titleRowIndex = aiResult.HeaderRowIndex >= 0 ? aiResult.HeaderRowIndex : candidateHeaderIdx;
+            entries = ExtractProjectEntries(rawRows, titleRowIndex, aiResult.ColumnMapping);
+        }
 
-                foreach (var mapping in colMapping)
+        return (entries, aiResult);
+    }
+
+    public static List<ProjectEntry> ExtractProjectEntries(
+        List<IDictionary<string, object>> rawRows,
+        int titleRowIndex,
+        Dictionary<string, string> colMapping)
+    {
+        var result = new List<ProjectEntry>();
+        int startDataRow = titleRowIndex + 1;
+        for (int i = startDataRow; i < rawRows.Count; i++)
+        {
+            var row = rawRows[i];
+            if (row.Values.All(v => v == null || string.IsNullOrWhiteSpace(v.ToString())))
+            {
+                continue;
+            }
+
+            var entry = new ProjectEntry();
+
+            foreach (var mapping in colMapping)
+            {
+                string colKey = mapping.Key.ToUpperInvariant();
+                string propName = mapping.Value;
+
+                object? rawVal = null;
+                if (row.TryGetValue(colKey, out var v1)) rawVal = v1;
+                else if (row.TryGetValue(mapping.Key, out var v2)) rawVal = v2;
+
+                if (rawVal == null) continue;
+                string valStr = rawVal.ToString()?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(valStr)) continue;
+
+                switch (propName)
                 {
-                    string colKey = mapping.Key;
-                    string propName = mapping.Value;
-
-                    if (!row.TryGetValue(colKey, out var rawVal) || rawVal == null) continue;
-                    string valStr = rawVal.ToString()?.Trim() ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(valStr)) continue;
-
-                    switch (propName)
-                    {
-                        case nameof(ProjectEntry.No):
-                            entry.No = valStr;
-                            break;
-                        case nameof(ProjectEntry.ProjectName):
-                            entry.ProjectName = valStr;
-                            break;
-                        case nameof(ProjectEntry.Description):
-                            entry.Description = valStr;
-                            break;
-                        case nameof(ProjectEntry.SourceFolder):
-                            entry.SourceFolder = valStr;
-                            break;
-                        case nameof(ProjectEntry.TnsName):
-                            entry.TnsName = valStr;
-                            break;
-                        case nameof(ProjectEntry.HostServer):
-                            entry.HostServer = valStr;
-                            break;
-                        case nameof(ProjectEntry.ServiceName):
-                            entry.ServiceName = valStr;
-                            break;
-                        case nameof(ProjectEntry.Port):
-                            entry.Port = valStr;
-                            break;
-                        case nameof(ProjectEntry.DbUsers):
-                            entry.DbUsers = valStr;
-                            break;
-                        case nameof(ProjectEntry.Tablespace):
-                            entry.Tablespace = valStr;
-                            break;
-                        case nameof(ProjectEntry.DbaUsername):
-                            entry.DbaUsername = valStr;
-                            break;
-                        case nameof(ProjectEntry.DbaPassword):
-                            entry.DbaPassword = valStr;
-                            break;
-                        case nameof(ProjectEntry.PersonInCharge):
-                            entry.PersonInCharge = valStr;
-                            break;
-                        case nameof(ProjectEntry.Notes):
-                            entry.Notes = valStr;
-                            break;
-                        case nameof(ProjectEntry.Notes2):
-                            entry.Notes2 = valStr;
-                            break;
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(entry.ServiceName)) entry.ServiceName = "ORCL";
-                if (string.IsNullOrWhiteSpace(entry.Port)) entry.Port = "1521";
-                if (string.IsNullOrWhiteSpace(entry.DbaUsername)) entry.DbaUsername = "SYSTEM";
-
-                // Chỉ nhận dòng nếu có thông tin dự án tối thiểu (Tên dự án, Source folder hoặc Host)
-                if (!string.IsNullOrWhiteSpace(entry.ProjectName) || !string.IsNullOrWhiteSpace(entry.SourceFolder) || !string.IsNullOrWhiteSpace(entry.HostServer))
-                {
-                    result.Add(entry);
+                    case nameof(ProjectEntry.No):
+                        entry.No = valStr;
+                        break;
+                    case nameof(ProjectEntry.ProjectName):
+                        entry.ProjectName = valStr;
+                        break;
+                    case nameof(ProjectEntry.Description):
+                        entry.Description = valStr;
+                        break;
+                    case nameof(ProjectEntry.SourceFolder):
+                        entry.SourceFolder = valStr;
+                        break;
+                    case nameof(ProjectEntry.TnsName):
+                        entry.TnsName = valStr;
+                        break;
+                    case nameof(ProjectEntry.HostServer):
+                        entry.HostServer = valStr;
+                        break;
+                    case nameof(ProjectEntry.ServiceName):
+                        entry.ServiceName = valStr;
+                        break;
+                    case nameof(ProjectEntry.Port):
+                        entry.Port = valStr;
+                        break;
+                    case nameof(ProjectEntry.DbUsers):
+                        entry.DbUsers = valStr;
+                        break;
+                    case nameof(ProjectEntry.Tablespace):
+                        entry.Tablespace = valStr;
+                        break;
+                    case nameof(ProjectEntry.DbaUsername):
+                        entry.DbaUsername = valStr;
+                        break;
+                    case nameof(ProjectEntry.DbaPassword):
+                        entry.DbaPassword = valStr;
+                        break;
+                    case nameof(ProjectEntry.PersonInCharge):
+                        entry.PersonInCharge = valStr;
+                        break;
+                    case nameof(ProjectEntry.Notes):
+                        entry.Notes = valStr;
+                        break;
+                    case nameof(ProjectEntry.Notes2):
+                        entry.Notes2 = valStr;
+                        break;
                 }
             }
 
-            return result;
-        });
+            if (string.IsNullOrWhiteSpace(entry.ServiceName)) entry.ServiceName = "ORCL";
+            if (string.IsNullOrWhiteSpace(entry.Port)) entry.Port = "1521";
+            if (string.IsNullOrWhiteSpace(entry.DbaUsername)) entry.DbaUsername = "SYSTEM";
+
+            // Chỉ nhận dòng nếu có thông tin dự án tối thiểu (Tên dự án, Source folder hoặc Host)
+            if (!string.IsNullOrWhiteSpace(entry.ProjectName) || !string.IsNullOrWhiteSpace(entry.SourceFolder) || !string.IsNullOrWhiteSpace(entry.HostServer))
+            {
+                result.Add(entry);
+            }
+        }
+        return result;
     }
 
     private static Dictionary<string, string> DetectProjectHeader(IDictionary<string, object> row)

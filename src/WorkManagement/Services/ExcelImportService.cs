@@ -103,15 +103,78 @@ public class ExcelImportService
         });
     }
 
-    private ExcelSheetData ReadSheetData(string filePath, string? sheetName)
+    public async Task<(ExcelSheetData SheetData, AiSchemaMappingResult AiResult)> RemapSheetWithAiAsync(
+        string filePath,
+        string? sheetName,
+        AiSettings aiSettings,
+        OpenAiClientService? aiClient = null)
     {
-        var result = new ExcelSheetData
+        var aiService = aiClient ?? new OpenAiClientService();
+        var sheetData = new ExcelSheetData
         {
             SheetName = string.IsNullOrWhiteSpace(sheetName) ? "Sheet1" : sheetName
         };
 
-        var rawRows = new List<IDictionary<string, object>>();
+        var rawRows = LoadRawRows(filePath, sheetName);
+        if (rawRows.Count == 0)
+        {
+            return (sheetData, new AiSchemaMappingResult { Success = false, ErrorMessage = "Không có dữ liệu trong sheet." });
+        }
 
+        int candidateHeaderIdx = 0;
+        int maxCells = 0;
+        int checkLimit = Math.Min(5, rawRows.Count);
+        for (int i = 0; i < checkLimit; i++)
+        {
+            int nonNullCount = rawRows[i].Values.Count(v => v != null && !string.IsNullOrWhiteSpace(v.ToString()));
+            if (nonNullCount > maxCells)
+            {
+                maxCells = nonNullCount;
+                candidateHeaderIdx = i;
+            }
+        }
+
+        var candidateHeaders = new Dictionary<string, string>();
+        foreach (var kv in rawRows[candidateHeaderIdx])
+        {
+            if (kv.Value != null && !string.IsNullOrWhiteSpace(kv.Value.ToString()))
+            {
+                candidateHeaders[kv.Key] = kv.Value.ToString()!.Trim();
+            }
+        }
+
+        var sampleRows = new List<Dictionary<string, string>>();
+        int sampleLimit = Math.Min(rawRows.Count, candidateHeaderIdx + 4);
+        for (int i = candidateHeaderIdx + 1; i < sampleLimit; i++)
+        {
+            var rowDict = new Dictionary<string, string>();
+            foreach (var kv in rawRows[i])
+            {
+                if (kv.Value != null && !string.IsNullOrWhiteSpace(kv.Value.ToString()))
+                {
+                    rowDict[kv.Key] = kv.Value.ToString()!.Trim();
+                }
+            }
+            if (rowDict.Count > 0)
+            {
+                sampleRows.Add(rowDict);
+            }
+        }
+
+        var aiResult = await aiService.InferVmSchemaMappingAsync(aiSettings, candidateHeaders, sampleRows);
+        if (aiResult.Success && aiResult.ColumnMapping.Count > 0)
+        {
+            int headerRowIndex = aiResult.HeaderRowIndex >= 0 ? aiResult.HeaderRowIndex : candidateHeaderIdx;
+            sheetData.Entries = ExtractVmEntries(rawRows, headerRowIndex, aiResult.ColumnMapping);
+            sheetData.Score = aiResult.ColumnMapping.Count * 20;
+        }
+
+        return (sheetData, aiResult);
+    }
+
+    public static List<IDictionary<string, object>> LoadRawRows(string filePath, string? sheetName)
+    {
+        var rawRows = new List<IDictionary<string, object>>();
         try
         {
             var queryResult = (sheetName == null
@@ -128,9 +191,18 @@ public class ExcelImportService
         }
         catch
         {
-            return result;
         }
+        return rawRows;
+    }
 
+    private ExcelSheetData ReadSheetData(string filePath, string? sheetName)
+    {
+        var result = new ExcelSheetData
+        {
+            SheetName = string.IsNullOrWhiteSpace(sheetName) ? "Sheet1" : sheetName
+        };
+
+        var rawRows = LoadRawRows(filePath, sheetName);
         if (rawRows.Count == 0) return result;
 
         int headerRowIndex = -1;
@@ -172,8 +244,17 @@ public class ExcelImportService
         }
 
         result.Score = bestScore;
+        result.Entries = ExtractVmEntries(rawRows, headerRowIndex, colMapping);
+        return result;
+    }
 
-        // Đọc tất cả các dòng dữ liệu nằm sau dòng Header
+    public static List<VirtualMachineEntry> ExtractVmEntries(
+        List<IDictionary<string, object>> rawRows,
+        int headerRowIndex,
+        Dictionary<string, string> colMapping)
+    {
+        var entries = new List<VirtualMachineEntry>();
+
         for (int i = headerRowIndex + 1; i < rawRows.Count; i++)
         {
             var row = rawRows[i];
@@ -188,13 +269,14 @@ public class ExcelImportService
 
             foreach (var mapping in colMapping)
             {
-                string colKey = mapping.Key;
+                string colKey = mapping.Key.ToUpperInvariant();
                 string propName = mapping.Value;
 
-                if (!row.TryGetValue(colKey, out var rawVal) || rawVal == null)
-                {
-                    continue;
-                }
+                object? rawVal = null;
+                if (row.TryGetValue(colKey, out var v1)) rawVal = v1;
+                else if (row.TryGetValue(mapping.Key, out var v2)) rawVal = v2;
+
+                if (rawVal == null) continue;
 
                 string valStr = FormatCellValue(rawVal);
                 if (string.IsNullOrWhiteSpace(valStr)) continue;
@@ -254,20 +336,18 @@ public class ExcelImportService
                 entry.ExpirationDate = "Vô hạn";
             }
 
-            // Nếu file Excel không có cột No hoặc No bị trống, tự động gán theo số thứ tự dòng
             if (string.IsNullOrWhiteSpace(entry.No))
             {
-                entry.No = (result.Entries.Count + 1).ToString();
+                entry.No = (entries.Count + 1).ToString();
             }
 
-            // Dòng được xem là hợp lệ nếu có ít nhất IP hoặc Tên máy
             if (!string.IsNullOrWhiteSpace(entry.Ip) || !string.IsNullOrWhiteSpace(entry.MachineName))
             {
-                result.Entries.Add(entry);
+                entries.Add(entry);
             }
         }
 
-        return result;
+        return entries;
     }
 
     private static (Dictionary<string, string> Mapping, int Score) DetectHeaderRow(IDictionary<string, object> row)
