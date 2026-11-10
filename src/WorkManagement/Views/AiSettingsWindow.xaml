@@ -1,0 +1,32 @@
+<Window x:Class="WorkManagement.Views.AiSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:views="clr-namespace:WorkManagement.Views"
+        Title="Cấu hình AI Model Nội Bộ" Height="680" Width="860"
+        MinHeight="550" MinWidth="720"
+        Icon="pack://application:,,,/WorkManagement;component/Assets/app.ico"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource AppWindowStyle}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Style="{StaticResource AppHeaderBannerStyle}" Padding="16,12">
+            <DockPanel>
+                <materialDesign:PackIcon Kind="RobotOutline" Width="28" Height="28" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Cấu hình AI Model Nội Bộ (Tương thích OpenAI)" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="Thiết lập endpoint AI, API Key, bỏ qua proxy công ty và tự động tải danh sách Model"
+                               FontSize="11" Opacity="0.85"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Embedded Reusable View -->
+        <views:AiSettingsView x:Name="InnerView" Grid.Row="1"/>
+    </Grid>
+</Window>

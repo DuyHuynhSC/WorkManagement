@@ -90,6 +90,9 @@ public partial class MainWindow : Window
         EmailConfigViewControl.Initialize(_currentSettings, _emailService, () => _candidates);
         EmailConfigViewControl.SettingsSaved += EmailConfigViewControl_SettingsSaved;
 
+        AiConfigViewControl.Initialize(_configService, _logger);
+        AiConfigViewControl.SettingsSaved += (_, _) => { _currentSettings = _configService.Load(); };
+
         DashboardViewControl.OpenCommandPaletteRequested += (_, _) => OpenCommandPalette();
 
         _systemTrayService = new SystemTrayService(
@@ -507,6 +510,11 @@ public partial class MainWindow : Window
     private void BtnEmailSettings_Click(object sender, RoutedEventArgs e)
     {
         SwitchToView(AppNavView.EmailConfig);
+    }
+
+    private void BtnAiSettings_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchToView(AppNavView.AiConfig);
     }
 
     private async void BtnSendPreviewEmail_Click(object sender, RoutedEventArgs e)
@@ -1309,7 +1317,8 @@ public partial class MainWindow : Window
         ProjectManager,
         TaskScheduler,
         FtpConfig,
-        EmailConfig
+        EmailConfig,
+        AiConfig
     }
 
     private void NavBtnDashboard_Click(object sender, RoutedEventArgs e)
@@ -1347,6 +1356,8 @@ public partial class MainWindow : Window
         ViewContainerScheduler.Visibility = targetView == AppNavView.TaskScheduler ? Visibility.Visible : Visibility.Collapsed;
         ViewContainerFtpConfig.Visibility = targetView == AppNavView.FtpConfig ? Visibility.Visible : Visibility.Collapsed;
         ViewContainerEmailConfig.Visibility = targetView == AppNavView.EmailConfig ? Visibility.Visible : Visibility.Collapsed;
+        if (ViewContainerAiConfig != null)
+            ViewContainerAiConfig.Visibility = targetView == AppNavView.AiConfig ? Visibility.Visible : Visibility.Collapsed;
 
         if (NavBtnDashboard != null)
             NavBtnDashboard.Style = (Style)FindResource(targetView == AppNavView.Dashboard ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
@@ -1356,6 +1367,8 @@ public partial class MainWindow : Window
         NavBtnScheduler.Style = (Style)FindResource(targetView == AppNavView.TaskScheduler ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         BtnOpenConnectionSettings.Style = (Style)FindResource(targetView == AppNavView.FtpConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         BtnEmailSettings.Style = (Style)FindResource(targetView == AppNavView.EmailConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
+        if (BtnAiSettings != null)
+            BtnAiSettings.Style = (Style)FindResource(targetView == AppNavView.AiConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
 
         switch (targetView)
         {
@@ -1406,6 +1419,14 @@ public partial class MainWindow : Window
                 TxtCurrentPageSub.Text = "Thiết lập Outgoing Server (SMTP - Port 25/587) và danh sách email thành viên nhận báo cáo";
                 IconCurrentPage.Kind = MaterialDesignThemes.Wpf.PackIconKind.EmailFastOutline;
                 EmailConfigViewControl.LoadFromSettings();
+                break;
+
+            case AppNavView.AiConfig:
+                TxtCurrentPageTitle.Text = "Cấu Hình AI Model Nội Bộ (OpenAI-Compatible)";
+                TxtCurrentPageSub.Text = "Thiết lập URL kết nối, API Key, bỏ qua proxy và tự động tải danh sách Model có sẵn từ server";
+                IconCurrentPage.Kind = MaterialDesignThemes.Wpf.PackIconKind.RobotOutline;
+                _currentSettings = _configService.Load();
+                AiConfigViewControl?.LoadSettingsToUi(_currentSettings.Ai ?? new AiSettings());
                 break;
         }
     }
@@ -1531,6 +1552,15 @@ public partial class MainWindow : Window
                 IconKind = PackIconKind.EmailFastOutline,
                 SearchKeywords = "email smtp mail bao cao",
                 ExecuteAction = () => NavigateAndRestore(AppNavView.EmailConfig)
+            },
+            new()
+            {
+                Title = "Cấu Hình AI Model Nội Bộ (OpenAI-Compatible)",
+                Subtitle = "Thiết lập endpoint AI, API Key, bỏ qua proxy công ty và tải danh sách Model",
+                CategoryBadge = "CẤU HÌNH",
+                IconKind = PackIconKind.RobotOutline,
+                SearchKeywords = "ai model openai llm ollama vllm endpoint",
+                ExecuteAction = () => NavigateAndRestore(AppNavView.AiConfig)
             },
             new()
             {

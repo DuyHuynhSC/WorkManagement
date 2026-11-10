@@ -92,6 +92,120 @@ public class OpenAiClientService
         return client;
     }
 
+    public static string NormalizeModelsUrl(string baseUrl)
+    {
+        string trimmed = baseUrl.Trim().TrimEnd('/');
+        if (trimmed.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed.Substring(0, trimmed.Length - "/chat/completions".Length);
+        }
+        if (trimmed.EndsWith("/models", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+        return $"{trimmed}/models";
+    }
+
+    public async Task<(bool Success, List<string> Models, string Message)> GetAvailableModelsAsync(
+        AiSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(settings.BaseUrl))
+        {
+            return (false, new List<string>(), "URL Endpoint của AI Model không được để trống.");
+        }
+
+        try
+        {
+            using var client = CreateHttpClient(settings);
+            string endpoint = NormalizeModelsUrl(settings.BaseUrl);
+
+            using var response = await client.GetAsync(endpoint, cancellationToken);
+            string responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return (false, new List<string>(), $"AI Server trả về mã lỗi {response.StatusCode}: {responseText}");
+            }
+
+            var models = ParseModelsJson(responseText);
+            if (models.Count == 0)
+            {
+                return (true, models, "Kết nối thành công nhưng không tìm thấy model nào trong danh sách trả về.");
+            }
+
+            return (true, models, $"Lấy danh sách thành công! Tìm thấy {models.Count} model.");
+        }
+        catch (HttpRequestException ex)
+        {
+            return (false, new List<string>(), $"Không thể kết nối đến AI Endpoint (BypassProxy: {settings.BypassProxy}): {ex.Message}");
+        }
+        catch (TaskCanceledException)
+        {
+            return (false, new List<string>(), $"Quá thời gian chờ phản hồi từ AI Server ({settings.TimeoutSeconds}s).");
+        }
+        catch (Exception ex)
+        {
+            return (false, new List<string>(), $"Lỗi khi tải danh sách Model: {ex.Message}");
+        }
+    }
+
+    public static List<string> ParseModelsJson(string json)
+    {
+        var modelList = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Định dạng chuẩn OpenAI: { "data": [ { "id": "model-id" } ] }
+            if (root.TryGetProperty("data", out var dataElem) && dataElem.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in dataElem.EnumerateArray())
+                {
+                    if (item.TryGetProperty("id", out var idElem) && !string.IsNullOrWhiteSpace(idElem.GetString()))
+                    {
+                        modelList.Add(idElem.GetString()!.Trim());
+                    }
+                }
+            }
+
+            // Định dạng Ollama / Local servers: { "models": [ { "name": "qwen2.5" } ] }
+            if (root.TryGetProperty("models", out var modelsElem) && modelsElem.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in modelsElem.EnumerateArray())
+                {
+                    if (item.TryGetProperty("name", out var nameElem) && !string.IsNullOrWhiteSpace(nameElem.GetString()))
+                    {
+                        modelList.Add(nameElem.GetString()!.Trim());
+                    }
+                    else if (item.TryGetProperty("id", out var idElem) && !string.IsNullOrWhiteSpace(idElem.GetString()))
+                    {
+                        modelList.Add(idElem.GetString()!.Trim());
+                    }
+                }
+            }
+
+            // Định dạng mảng chuỗi đơn giản: [ "model1", "model2" ]
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in root.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(item.GetString()))
+                    {
+                        modelList.Add(item.GetString()!.Trim());
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Bỏ qua lỗi parse
+        }
+
+        return modelList.OrderBy(m => m).ToList();
+    }
+
     public async Task<(bool Success, string Message)> TestConnectionAsync(AiSettings settings, CancellationToken cancellationToken = default)
     {
         try

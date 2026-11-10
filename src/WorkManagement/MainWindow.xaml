@@ -135,6 +135,17 @@
                                 <TextBlock Text="Cấu Hình Email" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
+
+                        <!-- CONFIG AI BUTTON -->
+                        <Button x:Name="BtnAiSettings" Style="{StaticResource AppNavButtonInactiveStyle}"
+                                Height="40" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
+                                Click="BtnAiSettings_Click"
+                                ToolTip="Cấu hình AI Model nội bộ (OpenAI-compatible) &amp; Tự động tải danh sách Model">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="RobotOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="Cấu Hình AI" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -717,6 +728,11 @@
                 <!-- VIEW 6: DASHBOARD & AUDIT -->
                 <Grid x:Name="ViewContainerDashboard" Visibility="Collapsed">
                     <views:DashboardView x:Name="DashboardViewControl"/>
+                </Grid>
+
+                <!-- VIEW 7: AI MODEL CONFIG -->
+                <Grid x:Name="ViewContainerAiConfig" Visibility="Collapsed">
+                    <views:AiSettingsView x:Name="AiConfigViewControl"/>
                 </Grid>
             </Grid>
         </Grid>

@@ -22,7 +22,6 @@ public partial class ConnectionSettingsView : UserControl
     private bool _suppressProfileSelectionChanged;
     private bool _isFtpPasswordRevealed;
     private bool _isProxyPasswordRevealed;
-    private bool _isAiApiKeyRevealed;
 
     public event EventHandler? SettingsSaved;
 
@@ -102,16 +101,6 @@ public partial class ConnectionSettingsView : UserControl
         TxtMinFileSizeMb.Text = s.MinFileSizeMb > 0 ? s.MinFileSizeMb.ToString("0.##") : "0";
         ChkEnableBackup.IsChecked = s.EnableBackup;
         TxtLocalBackupPath.Text = s.LocalBackupPath;
-
-        if (s.Ai != null)
-        {
-            ChkAiEnabled.IsChecked = s.Ai.IsEnabled;
-            TxtAiBaseUrl.Text = s.Ai.BaseUrl;
-            TxtAiModelName.Text = s.Ai.ModelName;
-            TxtAiApiKey.Password = s.Ai.ApiKey;
-            TxtAiApiKeyRevealed.Text = s.Ai.ApiKey;
-            ChkAiBypassProxy.IsChecked = s.Ai.BypassProxy;
-        }
     }
 
     public FtpSettings ReadSettingsFromUi()
@@ -140,18 +129,6 @@ public partial class ConnectionSettingsView : UserControl
 
         string ftpPass = _isFtpPasswordRevealed ? TxtPasswordRevealed.Text : TxtPassword.Password;
         string proxyPass = _isProxyPasswordRevealed ? TxtProxyPasswordRevealed.Text : TxtProxyPassword.Password;
-        string aiKey = _isAiApiKeyRevealed ? TxtAiApiKeyRevealed.Text : TxtAiApiKey.Password;
-
-        var aiSettings = new AiSettings
-        {
-            IsEnabled = ChkAiEnabled.IsChecked == true,
-            BaseUrl = string.IsNullOrWhiteSpace(TxtAiBaseUrl.Text) ? "http://localhost:11434/v1" : TxtAiBaseUrl.Text.Trim(),
-            ModelName = string.IsNullOrWhiteSpace(TxtAiModelName.Text) ? "default" : TxtAiModelName.Text.Trim(),
-            ApiKey = aiKey,
-            BypassProxy = ChkAiBypassProxy.IsChecked == true,
-            TimeoutSeconds = _settings.Ai?.TimeoutSeconds ?? 30,
-            Temperature = _settings.Ai?.Temperature ?? 0.1
-        };
 
         return new FtpSettings
         {
@@ -183,7 +160,7 @@ public partial class ConnectionSettingsView : UserControl
             RecipientEmails = new List<string>(_settings.RecipientEmails ?? new List<string>()),
             AutoSendEmailOnPreview = _settings.AutoSendEmailOnPreview,
             Profiles = _settings.Profiles,
-            Ai = aiSettings
+            Ai = _settings.Ai
         };
     }
 
@@ -246,64 +223,6 @@ public partial class ConnectionSettingsView : UserControl
         target.MinFileSizeMb = read.MinFileSizeMb;
         target.EnableBackup = read.EnableBackup;
         target.LocalBackupPath = read.LocalBackupPath;
-        target.Ai = read.Ai;
-    }
-
-    private void BtnToggleAiApiKey_Click(object sender, RoutedEventArgs e)
-    {
-        _isAiApiKeyRevealed = !_isAiApiKeyRevealed;
-        if (_isAiApiKeyRevealed)
-        {
-            TxtAiApiKeyRevealed.Text = TxtAiApiKey.Password;
-            TxtAiApiKey.Visibility = Visibility.Collapsed;
-            TxtAiApiKeyRevealed.Visibility = Visibility.Visible;
-            IconAiApiKeyEye.Kind = PackIconKind.EyeOffOutline;
-        }
-        else
-        {
-            TxtAiApiKey.Password = TxtAiApiKeyRevealed.Text;
-            TxtAiApiKeyRevealed.Visibility = Visibility.Collapsed;
-            TxtAiApiKey.Visibility = Visibility.Visible;
-            IconAiApiKeyEye.Kind = PackIconKind.EyeOutline;
-        }
-    }
-
-    private async void BtnTestAiConnection_Click(object sender, RoutedEventArgs e)
-    {
-        BtnTestAiConnection.IsEnabled = false;
-        BusyAiBar.Visibility = Visibility.Visible;
-        TxtTestAiLabel.Text = "Đang kiểm tra...";
-
-        try
-        {
-            var currentSettings = ReadSettingsFromUi();
-            var aiService = new OpenAiClientService();
-
-            _logger?.Info($"Bắt đầu kiểm tra kết nối AI Model: {currentSettings.Ai.BaseUrl} (Model: {currentSettings.Ai.ModelName}, BypassProxy: {currentSettings.Ai.BypassProxy})...");
-            var (success, message) = await aiService.TestConnectionAsync(currentSettings.Ai);
-
-            if (success)
-            {
-                _logger?.Info($"Kiểm tra AI thành công: {message}");
-                MessageBox.Show(Window.GetWindow(this), message, "Kiểm Tra AI Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                _logger?.Error($"Kiểm tra AI thất bại: {message}");
-                MessageBox.Show(Window.GetWindow(this), message, "Kiểm Tra AI Thất Bại", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger?.Error($"Lỗi khi kiểm tra kết nối AI: {ex.Message}");
-            MessageBox.Show(Window.GetWindow(this), $"Lỗi: {ex.Message}", "Lỗi Kết Nối AI", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-        finally
-        {
-            BtnTestAiConnection.IsEnabled = true;
-            BusyAiBar.Visibility = Visibility.Collapsed;
-            TxtTestAiLabel.Text = "Kiểm Tra Kết Nối AI";
-        }
     }
 
     private void CboProfiles_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -423,4 +423,73 @@ Vui lòng kiểm tra kỹ trước khi thực thi.";
         Assert.Contains("DROP TABLESPACE TS_DATA", result.Script);
         Assert.Contains("kiểm tra kỹ", result.Explanation);
     }
+
+    [Fact]
+    public void NormalizeModelsUrl_HandlesVariousBaseUrls()
+    {
+        Assert.Equal("http://10.0.0.1:8000/v1/models",
+            OpenAiClientService.NormalizeModelsUrl("http://10.0.0.1:8000/v1"));
+
+        Assert.Equal("http://10.0.0.1:8000/v1/models",
+            OpenAiClientService.NormalizeModelsUrl("http://10.0.0.1:8000/v1/"));
+
+        Assert.Equal("http://10.0.0.1:8000/v1/models",
+            OpenAiClientService.NormalizeModelsUrl("http://10.0.0.1:8000/v1/chat/completions"));
+
+        Assert.Equal("http://10.0.0.1:8000/v1/models",
+            OpenAiClientService.NormalizeModelsUrl("http://10.0.0.1:8000/v1/models"));
+    }
+
+    [Fact]
+    public void ParseModelsJson_ParsesOpenAiAndOllamaFormats()
+    {
+        string openAiJson = "{\"object\":\"list\",\"data\":[{\"id\":\"qwen2.5-coder\"},{\"id\":\"llama-3.3\"}]}";
+        var openAiModels = OpenAiClientService.ParseModelsJson(openAiJson);
+        Assert.Equal(2, openAiModels.Count);
+        Assert.Contains("qwen2.5-coder", openAiModels);
+        Assert.Contains("llama-3.3", openAiModels);
+
+        string ollamaJson = "{\"models\":[{\"name\":\"mistral-nemo:latest\"},{\"name\":\"deepseek-coder:6.7b\"}]}";
+        var ollamaModels = OpenAiClientService.ParseModelsJson(ollamaJson);
+        Assert.Equal(2, ollamaModels.Count);
+        Assert.Contains("mistral-nemo:latest", ollamaModels);
+        Assert.Contains("deepseek-coder:6.7b", ollamaModels);
+    }
+
+    [Fact]
+    public async Task GetAvailableModelsAsync_ReturnsModelsList_OnHttp200()
+    {
+        var mockHandler = new MockHttpMessageHandler(req =>
+        {
+            var response = new
+            {
+                @object = "list",
+                data = new[]
+                {
+                    new { id = "qwen2.5-coder:32b" },
+                    new { id = "codellama:34b" }
+                }
+            };
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(response), System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        var service = new OpenAiClientService(mockHandler);
+        var settings = new AiSettings
+        {
+            BaseUrl = "http://ai.internal:8000/v1",
+            BypassProxy = true
+        };
+
+        var (success, models, message) = await service.GetAvailableModelsAsync(settings);
+
+        Assert.True(success);
+        Assert.Equal(2, models.Count);
+        Assert.Contains("qwen2.5-coder:32b", models);
+        Assert.Contains("codellama:34b", models);
+        Assert.Contains("2 model", message);
+    }
 }
