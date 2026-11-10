@@ -75,15 +75,6 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="BtnDownloadTemplate" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnDownloadTemplate_Click"
-                            ToolTip="Xuất file mẫu Excel thông tin dự án để nhập liệu">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FileDownloadOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="File Mẫu" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
                     <Button x:Name="BtnAutoFitColumns" Style="{StaticResource AppOutlinedButtonStyle}"
                             Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnAutoFitColumns_Click"
                             ToolTip="Tự động căn chỉnh độ rộng các cột vừa khít nội dung">
@@ -103,16 +94,6 @@
                         </StackPanel>
                     </Button>
 
-                    <!-- NÚT XÓA DỰ ÁN (XÓA TUẦN TỰ FOLDER + DB USER + TABLESPACE) -->
-                    <Button x:Name="BtnDeleteSelected" Style="{StaticResource AppDangerButtonStyle}"
-                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnDeleteSelected_Click"
-                            ToolTip="Xóa các dự án đang chọn (xóa tuần tự Source Folder, DB User, Tablespace kèm backup)">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="DeleteForeverOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Xóa Dự Án (Folder &amp; DB)" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
-                        </StackPanel>
-                    </Button>
-
                     <Button x:Name="BtnDeleteAll" Style="{StaticResource AppOutlinedButtonStyle}"
                             Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnDeleteAll_Click"
                             ToolTip="Dọn sạch danh sách quản lý dự án hiện tại">
@@ -124,10 +105,14 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="BtnRefresh" Style="{StaticResource AppOutlinedButtonStyle}"
-                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnRefresh_Click"
-                            ToolTip="Tải lại danh sách từ bộ nhớ">
-                        <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center"/>
+                    <!-- NÚT XÓA DỰ ÁN (XÓA TUẦN TỰ FOLDER + DB USER + TABLESPACE) -->
+                    <Button x:Name="BtnDeleteSelected" Style="{StaticResource AppDangerButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnDeleteSelected_Click"
+                            ToolTip="Xóa các dự án đang chọn (xóa tuần tự Source Folder, DB User, Tablespace kèm backup)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DeleteForeverOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Xóa Dự Án (Folder &amp; DB)" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
                     </Button>
 
                     <Button x:Name="BtnClearAllFilters" Style="{StaticResource AppOutlinedButtonStyle}"
