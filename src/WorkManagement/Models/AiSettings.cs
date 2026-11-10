@@ -5,7 +5,7 @@ public class AiSettings
     public bool IsEnabled { get; set; } = true;
     public string BaseUrl { get; set; } = "http://localhost:11434/v1";
     public string ApiKey { get; set; } = string.Empty;
-    public string ModelName { get; set; } = "default";
+    public string ModelName { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 30;
 
     /// <summary>

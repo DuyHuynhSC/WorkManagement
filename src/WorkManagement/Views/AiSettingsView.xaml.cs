@@ -39,14 +39,20 @@ public partial class AiSettingsView : UserControl
         TxtApiKeyRevealed.Text = s.ApiKey;
         ChkBypassProxy.IsChecked = s.BypassProxy;
 
-        // Điền model name hiện tại vào ComboBox
-        string currentModel = string.IsNullOrWhiteSpace(s.ModelName) ? "default" : s.ModelName;
-        if (!CboModelName.Items.Contains(currentModel))
+        // Điền model name hiện tại vào ComboBox mà không dùng Items.Add để tránh lỗi ItemsSource
+        string currentModel = s.ModelName?.Trim() ?? string.Empty;
+        CboModelName.ItemsSource = null;
+        CboModelName.Items.Clear();
+        if (!string.IsNullOrWhiteSpace(currentModel))
         {
-            CboModelName.Items.Add(currentModel);
+            CboModelName.ItemsSource = new List<string> { currentModel };
+            CboModelName.SelectedItem = currentModel;
+        }
+        else
+        {
+            CboModelName.SelectedIndex = -1;
         }
         CboModelName.Text = currentModel;
-        CboModelName.SelectedItem = currentModel;
 
         TxtTimeout.Text = s.TimeoutSeconds > 0 ? s.TimeoutSeconds.ToString() : "30";
         TxtTemperature.Text = s.Temperature.ToString("0.#");
@@ -62,7 +68,6 @@ public partial class AiSettingsView : UserControl
 
         string apiKey = _isApiKeyRevealed ? TxtApiKeyRevealed.Text : TxtApiKey.Password;
         string modelName = CboModelName.Text?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(modelName)) modelName = "default";
 
         return new AiSettings
         {
@@ -119,11 +124,13 @@ public partial class AiSettingsView : UserControl
 
             if (success && models.Count > 0)
             {
-                string oldSelection = CboModelName.Text;
+                string oldSelection = CboModelName.Text?.Trim() ?? string.Empty;
+                CboModelName.ItemsSource = null;
+                CboModelName.Items.Clear();
                 CboModelName.ItemsSource = models;
 
                 // Nếu model cũ có trong danh sách mới thì giữ nguyên, ngược lại chọn model đầu tiên
-                if (models.Contains(oldSelection, StringComparer.OrdinalIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(oldSelection) && models.Contains(oldSelection, StringComparer.OrdinalIgnoreCase))
                 {
                     CboModelName.SelectedItem = models.First(m => string.Equals(m, oldSelection, StringComparison.OrdinalIgnoreCase));
                 }
@@ -131,6 +138,8 @@ public partial class AiSettingsView : UserControl
                 {
                     CboModelName.SelectedItem = models[0];
                 }
+
+                CboModelName.Text = CboModelName.SelectedItem?.ToString() ?? string.Empty;
 
                 TxtStatusMessage.Text = $"Thành công! Đã tìm thấy {models.Count} model trên server.";
                 _logger?.Info($"Đã nạp {models.Count} models: {string.Join(", ", models)}");

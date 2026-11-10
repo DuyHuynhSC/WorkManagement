@@ -144,10 +144,10 @@
 
                                     <!-- ComboBox Model Selection -->
                                     <ComboBox x:Name="CboModelName" Grid.Column="1" IsEditable="True"
-                                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                              VerticalContentAlignment="Center"
                                               materialDesign:HintAssist.Hint="Chọn hoặc nhập tên Model (VD: qwen2.5-coder, llama-3.3...)"
                                               ToolTip="Chọn model từ danh sách server trả về, hoặc gõ trực tiếp tên model tùy chỉnh"
-                                              FontSize="12" FontFamily="Consolas" Height="36"/>
+                                              FontSize="12" FontFamily="Consolas" MinHeight="36"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
