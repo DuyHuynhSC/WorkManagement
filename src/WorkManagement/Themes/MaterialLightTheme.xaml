@@ -39,7 +39,7 @@
 
     <!-- Terminal / Activity Log Box -->
     <SolidColorBrush x:Key="AppTerminalBackgroundBrush" Color="#1E1E1E" />
-    <SolidColorBrush x:Key="AppTerminalForegroundBrush" Color="#D4D4D4" />
+    <SolidColorBrush x:Key="AppTerminalForegroundBrush" Color="#F1F5F9" />
     <SolidColorBrush x:Key="AppTerminalBorderBrush" Color="#333333" />
 
     <!-- Outlined & Flat Buttons -->

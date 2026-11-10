@@ -54,7 +54,7 @@
 
     <!-- Terminal / Activity Log Box: Soft Deep Slate Inset -->
     <SolidColorBrush x:Key="AppTerminalBackgroundBrush" Color="#232B38" />
-    <SolidColorBrush x:Key="AppTerminalForegroundBrush" Color="#CBD5E1" />
+    <SolidColorBrush x:Key="AppTerminalForegroundBrush" Color="#F1F5F9" />
     <SolidColorBrush x:Key="AppTerminalBorderBrush" Color="#B0BCCB" />
 
     <!-- Outlined & Extruded Soft Buttons -->

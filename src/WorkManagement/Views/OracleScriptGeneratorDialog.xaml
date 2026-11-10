@@ -42,20 +42,54 @@
                     <StackPanel Grid.Column="0" Margin="0,0,12,0">
                         <TextBlock Text="Dự án ngữ cảnh:" FontWeight="SemiBold" FontSize="12"
                                    Foreground="{DynamicResource AppPrimaryTextBrush}" Margin="0,0,0,4"/>
-                        <ComboBox x:Name="CboProjects" Height="34"
-                                  DisplayMemberPath="ProjectName"
-                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                  SelectionChanged="CboProjects_SelectionChanged"/>
+                        <ComboBox x:Name="CboProjects" Height="36"
+                                  VerticalContentAlignment="Center"
+                                  Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                  Background="{DynamicResource AppCardBackgroundBrush}"
+                                  BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                                  BorderThickness="1"
+                                  FontSize="12"
+                                  SelectionChanged="CboProjects_SelectionChanged">
+                            <ComboBox.ItemContainerStyle>
+                                <Style TargetType="ComboBoxItem">
+                                    <Setter Property="Foreground" Value="{DynamicResource AppPrimaryTextBrush}"/>
+                                    <Setter Property="Background" Value="{DynamicResource AppCardBackgroundBrush}"/>
+                                    <Setter Property="FontSize" Value="12"/>
+                                    <Setter Property="Padding" Value="8,6"/>
+                                </Style>
+                            </ComboBox.ItemContainerStyle>
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ProjectName}"
+                                               Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                               FontSize="12" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </StackPanel>
 
                     <!-- Chọn kịch bản mẫu -->
                     <StackPanel Grid.Column="1">
                         <TextBlock Text="Kịch bản mẫu nhanh (Templates):" FontWeight="SemiBold" FontSize="12"
                                    Foreground="{DynamicResource AppPrimaryTextBrush}" Margin="0,0,0,4"/>
-                        <ComboBox x:Name="CboPresets" Height="34"
-                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                        <ComboBox x:Name="CboPresets" Height="36"
+                                  VerticalContentAlignment="Center"
+                                  Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                  Background="{DynamicResource AppCardBackgroundBrush}"
+                                  BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                                  BorderThickness="1"
+                                  FontSize="12"
+                                  SelectedIndex="0"
                                   SelectionChanged="CboPresets_SelectionChanged">
-                            <ComboBoxItem Content="1. Dọn dẹp: Kill Active Sessions + DROP USER CASCADE + DROP TABLESPACE" IsSelected="True"/>
+                            <ComboBox.ItemContainerStyle>
+                                <Style TargetType="ComboBoxItem">
+                                    <Setter Property="Foreground" Value="{DynamicResource AppPrimaryTextBrush}"/>
+                                    <Setter Property="Background" Value="{DynamicResource AppCardBackgroundBrush}"/>
+                                    <Setter Property="FontSize" Value="12"/>
+                                    <Setter Property="Padding" Value="8,6"/>
+                                </Style>
+                            </ComboBox.ItemContainerStyle>
+                            <ComboBoxItem Content="1. Dọn dẹp: Kill Active Sessions + DROP USER CASCADE + DROP TABLESPACE"/>
                             <ComboBoxItem Content="2. Giám sát: Kiểm tra dung lượng Tablespace, Datafiles &amp; Free Space"/>
                             <ComboBoxItem Content="3. Sao lưu: Lệnh xuất dữ liệu Oracle Data Pump (expdp) theo Schemas"/>
                             <ComboBoxItem Content="4. Bảo trì: Kiểm tra Invalid Objects và Recompile Packages/Views"/>
@@ -81,6 +115,7 @@
                              Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                              materialDesign:HintAssist.Hint="Yêu cầu cụ thể (ngôn ngữ tự nhiên hoặc sửa đổi template)..."
                              Text="Viết script hoàn chỉnh để ngắt các kết nối active, xóa DB Users và xóa Tablespace của dự án này."
+                             Foreground="{DynamicResource AppPrimaryTextBrush}"
                              VerticalContentAlignment="Center" FontSize="12"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
@@ -140,17 +175,22 @@
                 </DockPanel>
 
                 <!-- SQL Editor / Viewer -->
-                <Border Grid.Row="1" Background="{DynamicResource AppTerminalBackgroundBrush}"
-                        BorderBrush="{DynamicResource AppTerminalBorderBrush}"
-                        BorderThickness="1" CornerRadius="4" Padding="6">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                        <TextBox x:Name="TxtGeneratedScript" IsReadOnly="False"
-                                 BorderThickness="0" Background="Transparent"
-                                 Foreground="{DynamicResource AppTerminalForegroundBrush}"
-                                 FontFamily="Consolas" FontSize="12"
-                                 TextWrapping="Wrap" AcceptsReturn="True"
-                                 Text="-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng...&#x0a;"/>
-                    </ScrollViewer>
+                <Border Grid.Row="1" Style="{StaticResource AppTerminalBorderStyle}" Padding="8">
+                    <TextBox x:Name="TxtGeneratedScript"
+                             Style="{x:Null}"
+                             IsReadOnly="False"
+                             BorderThickness="0"
+                             Background="{DynamicResource AppTerminalBackgroundBrush}"
+                             Foreground="{DynamicResource AppTerminalForegroundBrush}"
+                             CaretBrush="{DynamicResource AppAccentHighlightBrush}"
+                             SelectionBrush="{DynamicResource AppAccentHighlightBrush}"
+                             FontFamily="Consolas, 'Courier New', monospace"
+                             FontSize="12.5"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             Text="-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng...&#x0a;"/>
                 </Border>
 
                 <!-- Ghi chú / Lời khuyên của AI -->
