@@ -75,6 +75,17 @@
                         </StackPanel>
                     </Button>
 
+                    <!-- NÚT AI SINH SCRIPT ORACLE -->
+                    <Button x:Name="BtnAiOracleScript" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnAiOracleScript_Click"
+                            ToolTip="Mở trợ lý AI sinh mã Oracle SQL, PL*SQL, expdp và kiểm tra sức khỏe database theo dự án">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DatabaseCogOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"
+                                                     Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                            <TextBlock Text="AI Oracle Script" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="BtnAutoFitColumns" Style="{StaticResource AppOutlinedButtonStyle}"
                             Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnAutoFitColumns_Click"
                             ToolTip="Tự động căn chỉnh độ rộng các cột vừa khít nội dung">

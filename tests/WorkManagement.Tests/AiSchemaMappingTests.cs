@@ -305,4 +305,122 @@ Chúc bạn làm việc hiệu quả!";
             }
         }
     }
+
+    [Fact]
+    public async Task AnalyzeCleanupSafetyAsync_DetectsSystemEntities_AsHighRisk()
+    {
+        var service = new OpenAiClientService();
+        var settings = new AiSettings { IsEnabled = false }; // Test baseline heuristic
+
+        var projectsToDelete = new List<ProjectEntry>
+        {
+            new()
+            {
+                Id = "p1",
+                ProjectName = "LegacyApp",
+                HostServer = "10.0.0.1",
+                DbUsers = "SYSTEM, APP_USER",
+                Tablespace = "USERS, TS_LEGACY"
+            }
+        };
+
+        var allProjects = new List<ProjectEntry>(projectsToDelete);
+
+        var result = await service.AnalyzeCleanupSafetyAsync(settings, projectsToDelete, allProjects);
+
+        Assert.True(result.Success);
+        Assert.Equal(DatabaseRiskLevel.High, result.RiskLevel);
+        Assert.Contains(result.Warnings, w => w.Contains("SYSTEM") && w.Contains("NGUY HIỂM"));
+        Assert.Contains(result.Warnings, w => w.Contains("USERS") && w.Contains("NGUY HIỂM"));
+    }
+
+    [Fact]
+    public async Task AnalyzeCleanupSafetyAsync_DetectsConflict_WithOtherActiveProject()
+    {
+        var service = new OpenAiClientService();
+        var settings = new AiSettings { IsEnabled = false };
+
+        var pToDelete = new ProjectEntry
+        {
+            Id = "p1",
+            ProjectName = "ProjectToDelete",
+            HostServer = "192.168.1.50",
+            DbUsers = "SHARED_USER_1",
+            Tablespace = "TS_SHARED"
+        };
+
+        var pActive = new ProjectEntry
+        {
+            Id = "p2",
+            ProjectName = "ActiveProject",
+            HostServer = "192.168.1.50",
+            DbUsers = "SHARED_USER_1",
+            Tablespace = "TS_SHARED"
+        };
+
+        var allProjects = new List<ProjectEntry> { pToDelete, pActive };
+        var projectsToDelete = new List<ProjectEntry> { pToDelete };
+
+        var result = await service.AnalyzeCleanupSafetyAsync(settings, projectsToDelete, allProjects);
+
+        Assert.True(result.Success);
+        Assert.True(result.RiskLevel >= DatabaseRiskLevel.Medium);
+        Assert.Contains(result.Warnings, w => w.Contains("CẢNH BÁO TRÙNG LẶP") && w.Contains("ActiveProject"));
+    }
+
+    [Fact]
+    public async Task GenerateOracleScriptAsync_ExtractsScriptFromMarkdown()
+    {
+        var mockHandler = new MockHttpMessageHandler(req =>
+        {
+            string aiResponse = @"Dưới đây là script dọn dẹp Oracle:
+```sql
+ALTER SYSTEM KILL SESSION '10,20' IMMEDIATE;
+DROP USER APP_USER CASCADE;
+DROP TABLESPACE TS_DATA INCLUDING CONTENTS AND DATAFILES;
+```
+Vui lòng kiểm tra kỹ trước khi thực thi.";
+
+            var responsePayload = new
+            {
+                choices = new[]
+                {
+                    new
+                    {
+                        message = new { role = "assistant", content = aiResponse }
+                    }
+                }
+            };
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(responsePayload), System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        var service = new OpenAiClientService(mockHandler);
+        var settings = new AiSettings
+        {
+            BaseUrl = "http://ai.internal:8000/v1",
+            BypassProxy = true
+        };
+
+        var project = new ProjectEntry
+        {
+            ProjectName = "ProjectAlpha",
+            HostServer = "192.168.1.20",
+            ServiceName = "ORCL",
+            DbaUsername = "SYSTEM",
+            DbUsers = "APP_USER",
+            Tablespace = "TS_DATA"
+        };
+
+        var result = await service.GenerateOracleScriptAsync(settings, project, "Viết script drop user");
+
+        Assert.True(result.Success);
+        Assert.Contains("KILL SESSION", result.Script);
+        Assert.Contains("DROP USER APP_USER CASCADE;", result.Script);
+        Assert.Contains("DROP TABLESPACE TS_DATA", result.Script);
+        Assert.Contains("kiểm tra kỹ", result.Explanation);
+    }
 }

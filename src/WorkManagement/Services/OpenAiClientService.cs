@@ -23,6 +23,31 @@ public class AiSchemaMappingResult
     public string ErrorMessage { get; set; } = string.Empty;
 }
 
+public enum DatabaseRiskLevel
+{
+    Low,       // An toàn
+    Medium,    // Cần lưu ý
+    High       // Nguy hiểm cao
+}
+
+public class DatabaseSafetyAnalysisResult
+{
+    public bool Success { get; set; }
+    public DatabaseRiskLevel RiskLevel { get; set; } = DatabaseRiskLevel.Low;
+    public List<string> Warnings { get; set; } = new();
+    public List<string> Recommendations { get; set; } = new();
+    public string Summary { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
+}
+
+public class OracleScriptGenerationResult
+{
+    public bool Success { get; set; }
+    public string Script { get; set; } = string.Empty;
+    public string Explanation { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
+}
+
 public class OpenAiClientService
 {
     private readonly HttpMessageHandler? _customHandler;
@@ -399,6 +424,355 @@ public class OpenAiClientService
         {
             result.Success = false;
             result.ErrorMessage = $"Không thể đọc kết quả JSON từ AI: {ex.Message}";
+        }
+    }
+
+    private static readonly HashSet<string> ReservedOracleEntities = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "SYSTEM", "SYSAUX", "USERS", "TEMP", "UNDOTBS1", "UNDOTBS2", "EXAMPLE", "DEFAULT", "SYS", "OUTLN"
+    };
+
+    public async Task<DatabaseSafetyAnalysisResult> AnalyzeCleanupSafetyAsync(
+        AiSettings settings,
+        List<ProjectEntry> projectsToDelete,
+        List<ProjectEntry> allProjects,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new DatabaseSafetyAnalysisResult();
+        var deletedIds = new HashSet<string>(projectsToDelete.Select(p => p.Id));
+        var remainingProjects = allProjects.Where(p => !deletedIds.Contains(p.Id)).ToList();
+
+        // 1. Phân tích nền tảng (Baseline Heuristics)
+        var baselineWarnings = new List<string>();
+        var baselineRecommendations = new List<string>();
+        var highRiskDetected = false;
+
+        foreach (var proj in projectsToDelete)
+        {
+            var users = ProjectCleanupService.ParseUserList(proj.DbUsers);
+            var tablespaces = ProjectCleanupService.ParseTablespaceList(proj.Tablespace);
+
+            // Kiểm tra đối tượng hệ thống Oracle nhạy cảm
+            foreach (var u in users)
+            {
+                if (ReservedOracleEntities.Contains(u))
+                {
+                    highRiskDetected = true;
+                    baselineWarnings.Add($"[NGUY HIỂM] Dự án '{proj.ProjectName}' khai báo User hệ thống: '{u}'. Tuyệt đối không được DROP user này!");
+                }
+            }
+
+            foreach (var ts in tablespaces)
+            {
+                if (ReservedOracleEntities.Contains(ts))
+                {
+                    highRiskDetected = true;
+                    baselineWarnings.Add($"[NGUY HIỂM] Dự án '{proj.ProjectName}' khai báo Tablespace hệ thống: '{ts}'. Việc xóa tablespace này sẽ phá hỏng Database!");
+                }
+            }
+
+            // Kiểm tra xung đột với các dự án còn lại trong hệ thống
+            foreach (var other in remainingProjects)
+            {
+                var otherUsers = ProjectCleanupService.ParseUserList(other.DbUsers);
+                var otherTs = ProjectCleanupService.ParseTablespaceList(other.Tablespace);
+
+                var commonUsers = users.Intersect(otherUsers, StringComparer.OrdinalIgnoreCase).ToList();
+                if (commonUsers.Count > 0)
+                {
+                    string sameHost = string.Equals(proj.HostServer, other.HostServer, StringComparison.OrdinalIgnoreCase)
+                        ? $"CÙNG HOST '{proj.HostServer}'"
+                        : "Khác Host";
+                    baselineWarnings.Add($"[CẢNH BÁO TRÙNG LẶP] User '{string.Join(", ", commonUsers)}' của dự án '{proj.ProjectName}' cũng được sử dụng bởi dự án đang hoạt động '{other.ProjectName}' ({sameHost}).");
+                }
+
+                var commonTs = tablespaces.Intersect(otherTs, StringComparer.OrdinalIgnoreCase).ToList();
+                if (commonTs.Count > 0)
+                {
+                    string sameHost = string.Equals(proj.HostServer, other.HostServer, StringComparison.OrdinalIgnoreCase)
+                        ? $"CÙNG HOST '{proj.HostServer}'"
+                        : "Khác Host";
+                    baselineWarnings.Add($"[CẢNH BÁO TRÙNG LẶP] Tablespace '{string.Join(", ", commonTs)}' của dự án '{proj.ProjectName}' cũng được sử dụng bởi dự án đang hoạt động '{other.ProjectName}' ({sameHost}).");
+                }
+            }
+        }
+
+        if (baselineWarnings.Count == 0)
+        {
+            baselineRecommendations.Add("Không phát hiện xung đột hay đối tượng hệ thống nhạy cảm.");
+            baselineRecommendations.Add("Khuyến nghị luôn sao lưu (Export DDL / Data Pump) trước khi thực thi xóa.");
+        }
+        else
+        {
+            baselineRecommendations.Add("Xem xét kỹ danh sách đối tượng trùng lặp hoặc đối tượng hệ thống trước khi xóa.");
+            baselineRecommendations.Add("Bắt buộc tích chọn 'Sao lưu Database' trước khi thực thi.");
+        }
+
+        result.Warnings = baselineWarnings;
+        result.Recommendations = baselineRecommendations;
+        result.RiskLevel = highRiskDetected ? DatabaseRiskLevel.High : (baselineWarnings.Count > 0 ? DatabaseRiskLevel.Medium : DatabaseRiskLevel.Low);
+        result.Summary = result.RiskLevel == DatabaseRiskLevel.High
+            ? "Mức độ rủi ro CAO: Phát hiện đối tượng hệ thống hoặc xung đột nghiêm trọng!"
+            : (result.RiskLevel == DatabaseRiskLevel.Medium
+                ? "Mức độ rủi ro TRUNG BÌNH: Có tài nguyên trùng với các dự án khác."
+                : "Mức độ rủi ro THẤP: Có thể tiến hành dọn dẹp an toàn kèm sao lưu.");
+
+        // Nếu AI chưa được kích hoạt hoặc không có URL, trả về kết quả phân tích nền tảng
+        if (!settings.IsEnabled || string.IsNullOrWhiteSpace(settings.BaseUrl))
+        {
+            result.Success = true;
+            return result;
+        }
+
+        // 2. Nâng cao chất lượng đánh giá bằng AI Model nội bộ
+        try
+        {
+            using var client = CreateHttpClient(settings);
+            string endpoint = NormalizeChatCompletionsUrl(settings.BaseUrl);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Bạn là chuyên gia an toàn cơ sở dữ liệu Oracle Database (Senior Oracle DBA Safety Advisor).");
+            sb.AppendLine("Hãy phân tích các rủi ro có thể xảy ra khi người dùng dọn dẹp (xóa source code, drop user cascade và drop tablespace) cho danh sách dự án dưới đây.");
+            sb.AppendLine();
+            sb.AppendLine("DANH SÁCH DỰ ÁN DỰ KIẾN XÓA:");
+            foreach (var p in projectsToDelete)
+            {
+                sb.AppendLine($"- Dự án: {p.ProjectName} (Host: {p.HostServer}:{p.Port}, Service: {p.ServiceName})");
+                sb.AppendLine($"  Thư mục Source: {p.SourceFolder}");
+                sb.AppendLine($"  DB Users: {p.DbUsers}");
+                sb.AppendLine($"  Tablespaces: {p.Tablespace}");
+            }
+            sb.AppendLine();
+
+            if (baselineWarnings.Count > 0)
+            {
+                sb.AppendLine("CÁC XUNG ĐỘT HỆ THỐNG ĐÃ PHÁT HIỆN:");
+                foreach (var w in baselineWarnings)
+                {
+                    sb.AppendLine($"- {w}");
+                }
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("YÊU CẦU TRẢ VỀ:");
+            sb.AppendLine("Trả về DUY NHẤT một JSON hợp lệ (không kèm văn bản ngoài JSON):");
+            sb.AppendLine("{");
+            sb.AppendLine("  \"riskLevel\": \"Low\" | \"Medium\" | \"High\",");
+            sb.AppendLine("  \"summary\": \"Tóm tắt đánh giá an toàn ngắn gọn\",");
+            sb.AppendLine("  \"warnings\": [\"Cảnh báo 1\", \"Cảnh báo 2\"],");
+            sb.AppendLine("  \"recommendations\": [\"Khuyến nghị bảo vệ an toàn 1\", \"Khuyến nghị 2\"]");
+            sb.AppendLine("}");
+
+            var requestBody = new
+            {
+                model = string.IsNullOrWhiteSpace(settings.ModelName) ? "default" : settings.ModelName.Trim(),
+                messages = new object[]
+                {
+                    new { role = "system", content = "Bạn là hệ thống cố vấn an toàn Database, luôn trả về JSON hợp lệ." },
+                    new { role = "user", content = sb.ToString() }
+                },
+                temperature = 0.1
+            };
+
+            var jsonContent = new StringContent(
+                JsonSerializer.Serialize(requestBody),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            using var response = await client.PostAsync(endpoint, jsonContent, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                string responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+                string aiContent = ExtractContentFromChatCompletion(responseText);
+                ParseSafetyAnalysisJson(aiContent, result);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Nếu gọi AI thất bại (mạng, timeout), vẫn giữ kết quả baseline phân tích sẵn
+            result.Summary += $" (Lưu ý: Không thể kết nối AI Model: {ex.Message})";
+        }
+
+        result.Success = true;
+        return result;
+    }
+
+    public static void ParseSafetyAnalysisJson(string aiContent, DatabaseSafetyAnalysisResult result)
+    {
+        try
+        {
+            string cleanJson = aiContent;
+            var match = Regex.Match(aiContent, @"```(?:json)?\s*([\s\S]*?)\s*```", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                cleanJson = match.Groups[1].Value.Trim();
+            }
+            else
+            {
+                int firstBrace = aiContent.IndexOf('{');
+                int lastBrace = aiContent.LastIndexOf('}');
+                if (firstBrace >= 0 && lastBrace > firstBrace)
+                {
+                    cleanJson = aiContent.Substring(firstBrace, lastBrace - firstBrace + 1);
+                }
+            }
+
+            using var doc = JsonDocument.Parse(cleanJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("riskLevel", out var riskElem))
+            {
+                string rStr = riskElem.GetString() ?? string.Empty;
+                if (Enum.TryParse<DatabaseRiskLevel>(rStr, ignoreCase: true, out var level))
+                {
+                    // Nếu baseline đã là High thì không hạ xuống Low/Medium
+                    if (result.RiskLevel != DatabaseRiskLevel.High)
+                    {
+                        result.RiskLevel = level;
+                    }
+                }
+            }
+
+            if (root.TryGetProperty("summary", out var sumElem) && !string.IsNullOrWhiteSpace(sumElem.GetString()))
+            {
+                result.Summary = sumElem.GetString()!;
+            }
+
+            if (root.TryGetProperty("warnings", out var wElem) && wElem.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in wElem.EnumerateArray())
+                {
+                    string w = item.GetString()?.Trim() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(w) && !result.Warnings.Contains(w))
+                    {
+                        result.Warnings.Add(w);
+                    }
+                }
+            }
+
+            if (root.TryGetProperty("recommendations", out var rElem) && rElem.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in rElem.EnumerateArray())
+                {
+                    string r = item.GetString()?.Trim() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(r) && !result.Recommendations.Contains(r))
+                    {
+                        result.Recommendations.Add(r);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Bỏ qua lỗi parse JSON AI và giữ baseline
+        }
+    }
+
+    public async Task<OracleScriptGenerationResult> GenerateOracleScriptAsync(
+        AiSettings settings,
+        ProjectEntry project,
+        string requestPrompt,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new OracleScriptGenerationResult();
+
+        if (string.IsNullOrWhiteSpace(settings.BaseUrl))
+        {
+            result.ErrorMessage = "Chưa cấu hình URL Endpoint của AI Model nội bộ.";
+            return result;
+        }
+
+        try
+        {
+            using var client = CreateHttpClient(settings);
+            string endpoint = NormalizeChatCompletionsUrl(settings.BaseUrl);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Bạn là chuyên gia Oracle Database (Senior Oracle DBA).");
+            sb.AppendLine("Nhiệm vụ: Viết mã Oracle SQL / PL*SQL / Tiện ích Data Pump (expdp) chính xác, chuyên nghiệp, có chú thích chi tiết dựa trên thông tin dự án.");
+            sb.AppendLine();
+            sb.AppendLine("THÔNG TIN DỰ ÁN:");
+            sb.AppendLine($"- Tên dự án: {project.ProjectName}");
+            sb.AppendLine($"- Host Server: {project.HostServer}:{project.Port}");
+            sb.AppendLine($"- Service Name: {project.ServiceName}");
+            sb.AppendLine($"- Tài khoản SYSDBA: {project.DbaUsername}");
+            sb.AppendLine($"- DB Users / Schemas: {project.DbUsers}");
+            sb.AppendLine($"- Tablespaces: {project.Tablespace}");
+            sb.AppendLine();
+            sb.AppendLine($"YÊU CẦU CỤ THỂ:");
+            sb.AppendLine(requestPrompt);
+            sb.AppendLine();
+            sb.AppendLine("QUY TẮC:");
+            sb.AppendLine("1. Sử dụng cú pháp Oracle Database chuẩn.");
+            sb.AppendLine("2. Các câu lệnh thao tác nguy hiểm (DROP, KILL SESSION...) phải có chú thích an toàn rõ ràng.");
+            sb.AppendLine("3. Đặt toàn bộ mã lệnh SQL/Script trong khối ```sql ... ```.");
+            sb.AppendLine("4. Giải thích ngắn gọn mục đích và cách chạy script.");
+
+            var requestBody = new
+            {
+                model = string.IsNullOrWhiteSpace(settings.ModelName) ? "default" : settings.ModelName.Trim(),
+                messages = new object[]
+                {
+                    new { role = "system", content = "Bạn là trợ lý chuyên sâu về Oracle Database SQL & Administration." },
+                    new { role = "user", content = sb.ToString() }
+                },
+                temperature = 0.2
+            };
+
+            var jsonContent = new StringContent(
+                JsonSerializer.Serialize(requestBody),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            using var response = await client.PostAsync(endpoint, jsonContent, cancellationToken);
+            string responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                result.ErrorMessage = $"AI Server trả về mã lỗi {response.StatusCode}: {responseText}";
+                return result;
+            }
+
+            string aiContent = ExtractContentFromChatCompletion(responseText);
+            ExtractScriptAndExplanation(aiContent, result);
+            result.Success = !string.IsNullOrWhiteSpace(result.Script);
+            if (!result.Success && string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                result.ErrorMessage = "AI không tạo được script nào.";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            result.ErrorMessage = $"Lỗi kết nối AI Server (BypassProxy: {settings.BypassProxy}): {ex.Message}";
+        }
+        catch (TaskCanceledException)
+        {
+            result.ErrorMessage = $"Quá thời gian chờ phản hồi từ AI Server ({settings.TimeoutSeconds}s).";
+        }
+        catch (Exception ex)
+        {
+            result.ErrorMessage = $"Lỗi khi sinh script: {ex.Message}";
+        }
+
+        return result;
+    }
+
+    public static void ExtractScriptAndExplanation(string aiContent, OracleScriptGenerationResult result)
+    {
+        var match = Regex.Match(aiContent, @"```(?:sql|plsql|bash|sh)?\s*([\s\S]*?)\s*```", RegexOptions.IgnoreCase);
+        if (match.Success)
+        {
+            result.Script = match.Groups[1].Value.Trim();
+            // Phần text còn lại làm giải thích
+            string explanation = aiContent.Replace(match.Value, string.Empty).Trim();
+            result.Explanation = explanation;
+        }
+        else
+        {
+            result.Script = aiContent.Trim();
+            result.Explanation = "Đã sinh script theo yêu cầu.";
         }
     }
 }

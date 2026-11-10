@@ -1,0 +1,177 @@
+<Window x:Class="WorkManagement.Views.OracleScriptGeneratorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="Trợ Lý Sinh Script Oracle Database AI"
+        Height="720" Width="950" MinHeight="600" MinWidth="750"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource AppWindowStyle}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="Auto"/> <!-- Project Context & Preset Scenario -->
+            <RowDefinition Height="*"/>    <!-- Generated SQL Code & Explanation -->
+            <RowDefinition Height="Auto"/> <!-- Footer Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- ROW 0: HEADER BANNER -->
+        <Border Grid.Row="0" Margin="0,0,0,12" Padding="14,10" Style="{StaticResource AppHeaderBannerStyle}" CornerRadius="6">
+            <DockPanel LastChildFill="True">
+                <materialDesign:PackIcon Kind="DatabaseCogOutline" Width="30" Height="30" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="AI CỐ VẤN &amp; SINH SCRIPT ORACLE DATABASE" FontSize="15" FontWeight="Bold"/>
+                    <TextBlock Text="Sinh mã Oracle SQL / PL*SQL / Data Pump chuẩn xác, có kèm chú thích an toàn và kiểm tra rủi ro"
+                               FontSize="11.5" Opacity="0.9"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ROW 1: CONTEXT & PROMPT SETTINGS -->
+        <materialDesign:Card Grid.Row="1" Margin="0,0,0,10" Padding="14,10"
+                             Background="{DynamicResource AppCardBackgroundBrush}"
+                             BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="1">
+            <StackPanel>
+                <!-- Dự án ngữ cảnh & Kịch bản mẫu -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.5*"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Chọn dự án -->
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="Dự án ngữ cảnh:" FontWeight="SemiBold" FontSize="12"
+                                   Foreground="{DynamicResource AppPrimaryTextBrush}" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="CboProjects" Height="34"
+                                  DisplayMemberPath="ProjectName"
+                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                  SelectionChanged="CboProjects_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- Chọn kịch bản mẫu -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Kịch bản mẫu nhanh (Templates):" FontWeight="SemiBold" FontSize="12"
+                                   Foreground="{DynamicResource AppPrimaryTextBrush}" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="CboPresets" Height="34"
+                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                  SelectionChanged="CboPresets_SelectionChanged">
+                            <ComboBoxItem Content="1. Dọn dẹp: Kill Active Sessions + DROP USER CASCADE + DROP TABLESPACE" IsSelected="True"/>
+                            <ComboBoxItem Content="2. Giám sát: Kiểm tra dung lượng Tablespace, Datafiles &amp; Free Space"/>
+                            <ComboBoxItem Content="3. Sao lưu: Lệnh xuất dữ liệu Oracle Data Pump (expdp) theo Schemas"/>
+                            <ComboBoxItem Content="4. Bảo trì: Kiểm tra Invalid Objects và Recompile Packages/Views"/>
+                            <ComboBoxItem Content="5. Tùy chỉnh: Nhập yêu cầu bằng ngôn ngữ tự nhiên bên dưới..."/>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Thông tin tóm tắt Schema ngữ cảnh -->
+                <Border Background="{DynamicResource AppSecondarySubtleBackgroundBrush}" CornerRadius="4" Padding="8,6" Margin="0,0,0,8">
+                    <TextBlock x:Name="TxtContextSummary" Text="Host: ... | Service: ... | Users: ... | Tablespace: ..."
+                               FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                </Border>
+
+                <!-- Input Prompt tùy biến -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="TxtCustomPrompt" Grid.Column="0" Margin="0,0,10,0"
+                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                             materialDesign:HintAssist.Hint="Yêu cầu cụ thể (ngôn ngữ tự nhiên hoặc sửa đổi template)..."
+                             Text="Viết script hoàn chỉnh để ngắt các kết nối active, xóa DB Users và xóa Tablespace của dự án này."
+                             VerticalContentAlignment="Center" FontSize="12"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button x:Name="BtnGenerate" Style="{StaticResource AppPrimaryButtonStyle}"
+                                Height="36" Padding="14,0" Click="BtnGenerate_Click"
+                                ToolTip="Gọi AI Model nội bộ để sinh script">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="AutoFix" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock x:Name="TxtGenerateLabel" Text="Sinh Script Bằng AI" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <ProgressBar x:Name="BusyBarGenerate" IsIndeterminate="True" Width="40" Height="4"
+                                     Visibility="Collapsed" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </materialDesign:Card>
+
+        <!-- ROW 2: GENERATED SQL SCRIPT & EXPLANATION -->
+        <materialDesign:Card Grid.Row="2" Margin="0,0,0,10" Padding="10"
+                             Background="{DynamicResource AppCardBackgroundBrush}"
+                             BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Toolbar Script -->
+                <DockPanel Grid.Row="0" Margin="2,0,2,8">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <materialDesign:PackIcon Kind="CodeBraces" Width="16" Height="16"
+                                                 Foreground="{DynamicResource AppSectionIconBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="Mã Lệnh Oracle SQL / PL*SQL:" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                        <Button x:Name="BtnCopyScript" Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="28" Padding="10,0" Margin="0,0,8,0" Click="BtnCopyScript_Click"
+                                ToolTip="Sao chép toàn bộ mã lệnh SQL vào Clipboard">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ContentCopy" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock Text="Sao Chép" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="BtnSaveScript" Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="28" Padding="10,0" Click="BtnSaveScript_Click"
+                                ToolTip="Lưu script ra file .sql trên máy">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FileDownloadOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock Text="Lưu File .sql" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- SQL Editor / Viewer -->
+                <Border Grid.Row="1" Background="{DynamicResource AppTerminalBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppTerminalBorderBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="6">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <TextBox x:Name="TxtGeneratedScript" IsReadOnly="False"
+                                 BorderThickness="0" Background="Transparent"
+                                 Foreground="{DynamicResource AppTerminalForegroundBrush}"
+                                 FontFamily="Consolas" FontSize="12"
+                                 TextWrapping="Wrap" AcceptsReturn="True"
+                                 Text="-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng...&#x0a;"/>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Ghi chú / Lời khuyên của AI -->
+                <Border Grid.Row="2" Background="{DynamicResource AppSecondarySubtleBackgroundBrush}"
+                        CornerRadius="4" Padding="8,6" Margin="0,8,0,0">
+                    <TextBlock x:Name="TxtExplanation" Text="Ghi chú: Luôn kiểm tra các câu lệnh DROP và đảm bảo đã sao lưu trước khi thực thi trên môi trường Production."
+                               FontSize="11" FontStyle="Italic" TextWrapping="Wrap"
+                               Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                </Border>
+            </Grid>
+        </materialDesign:Card>
+
+        <!-- ROW 3: FOOTER -->
+        <Border Grid.Row="3" Padding="0,4,0,0">
+            <DockPanel LastChildFill="True">
+                <TextBlock Text="* Kết nối AI nội bộ được định tuyến trực tiếp (Bỏ qua Proxy doanh nghiệp)"
+                           VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource AppSecondaryTextBrush}" Opacity="0.8"/>
+                <Button x:Name="BtnClose" Style="{StaticResource AppOutlinedButtonStyle}"
+                        Height="34" Padding="18,0" HorizontalAlignment="Right"
+                        Content="Đóng" Click="BtnClose_Click"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

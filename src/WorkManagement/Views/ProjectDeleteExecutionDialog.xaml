@@ -169,6 +169,19 @@
 
             <!-- Nút hành động -->
             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <!-- Nút AI Cố Vấn An Toàn -->
+                <Button x:Name="BtnAiSafetyCheck" Style="{StaticResource AppOutlinedButtonStyle}"
+                        Height="34" Padding="14,0" Margin="0,0,10,0" Click="BtnAiSafetyCheck_Click"
+                        ToolTip="Sử dụng AI Cố vấn an toàn để quét các rủi ro, xung đột schema và tablespace trước khi xóa">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="ShieldAlertOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                 Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                        <TextBlock x:Name="TxtAiSafetyLabel" Text="AI Cố Vấn An Toàn" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <ProgressBar x:Name="AiSafetyBusyBar" IsIndeterminate="True" Width="40" Height="4"
+                             Visibility="Collapsed" Margin="0,0,10,0" VerticalAlignment="Center"/>
+
                 <Button x:Name="BtnClose" Style="{StaticResource AppOutlinedButtonStyle}"
                         Height="34" Padding="14,0" Margin="0,0,10,0" Content="Đóng"
                         Click="BtnClose_Click"/>

@@ -209,4 +209,84 @@ public partial class ProjectDeleteExecutionDialog : Window
         DialogResult = HasDeletedProjects;
         Close();
     }
+
+    private void LogMessage(string message)
+    {
+        TxtLogOutput.AppendText(message + "\n");
+        ScrollerLog.ScrollToEnd();
+    }
+
+    private async void BtnAiSafetyCheck_Click(object sender, RoutedEventArgs e)
+    {
+        BtnAiSafetyCheck.IsEnabled = false;
+        AiSafetyBusyBar.Visibility = Visibility.Visible;
+        TxtAiSafetyLabel.Text = "Đang phân tích...";
+
+        try
+        {
+            var configService = new ConfigService();
+            var settings = configService.Load();
+            var allProjects = _projectService.LoadAll();
+            var aiClient = new OpenAiClientService();
+
+            LogMessage("\n================================================================================");
+            LogMessage($"[AI SAFETY ADVISOR] BẮT ĐẦU ĐÁNH GIÁ RỦI RO CHO {_projectsToDelete.Count} DỰ ÁN...");
+            LogMessage("================================================================================");
+
+            var result = await aiClient.AnalyzeCleanupSafetyAsync(settings.Ai, _projectsToDelete, allProjects);
+
+            LogMessage($"MỨC ĐỘ RỦI RO: [{result.RiskLevel.ToString().ToUpperInvariant()}]");
+            LogMessage($"TỔNG QUAN: {result.Summary}");
+
+            if (result.Warnings.Count > 0)
+            {
+                LogMessage("CÁC CẢNH BÁO PHÁT HIỆN:");
+                foreach (var w in result.Warnings)
+                {
+                    LogMessage($"  [!] {w}");
+                }
+            }
+
+            if (result.Recommendations.Count > 0)
+            {
+                LogMessage("KHUYẾN NGHỊ BẢO VỆ DỮ LIỆU:");
+                foreach (var r in result.Recommendations)
+                {
+                    LogMessage($"  [*] {r}");
+                }
+            }
+            LogMessage("================================================================================\n");
+
+            var icon = result.RiskLevel switch
+            {
+                DatabaseRiskLevel.High => MessageBoxImage.Error,
+                DatabaseRiskLevel.Medium => MessageBoxImage.Warning,
+                _ => MessageBoxImage.Information
+            };
+
+            string title = result.RiskLevel switch
+            {
+                DatabaseRiskLevel.High => "CẢNH BÁO RỦI RO CAO - DATABASE",
+                DatabaseRiskLevel.Medium => "CẢNH BÁO CẦN LƯU Ý - DATABASE",
+                _ => "ĐÁNH GIÁ AN TOÀN - DATABASE"
+            };
+
+            string msg = $"{result.Summary}\n\n" +
+                         (result.Warnings.Count > 0 ? $"Cảnh báo ({result.Warnings.Count}):\n- {string.Join("\n- ", result.Warnings.Take(3))}\n\n" : "") +
+                         $"Xem chi tiết trong Nhật Ký Thực Thi bên dưới.";
+
+            MessageBox.Show(this, msg, title, MessageBoxButton.OK, icon);
+        }
+        catch (Exception ex)
+        {
+            LogMessage($"[AI SAFETY ERROR] Lỗi khi phân tích an toàn: {ex.Message}");
+            MessageBox.Show(this, $"Lỗi: {ex.Message}", "Lỗi Phân Tích AI", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            BtnAiSafetyCheck.IsEnabled = true;
+            AiSafetyBusyBar.Visibility = Visibility.Collapsed;
+            TxtAiSafetyLabel.Text = "AI Cố Vấn An Toàn";
+        }
+    }
 }

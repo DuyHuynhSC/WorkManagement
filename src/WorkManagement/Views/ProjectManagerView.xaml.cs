@@ -376,6 +376,22 @@ public partial class ProjectManagerView : UserControl
         }
     }
 
+    private void BtnAiOracleScript_Click(object sender, RoutedEventArgs e)
+    {
+        if (_allEntries.Count == 0)
+        {
+            MessageBox.Show(Window.GetWindow(this), "Danh sách dự án đang trống.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var selectedProject = GridProjects.SelectedItem as ProjectEntry;
+        var dialog = new OracleScriptGeneratorDialog(_allEntries.ToList(), selectedProject)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        dialog.ShowDialog();
+    }
+
     private void BtnDeleteSelected_Click(object sender, RoutedEventArgs e)
     {
         var selectedProjects = _allEntries.Where(x => x.IsSelected).ToList();
