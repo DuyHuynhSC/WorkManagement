@@ -18,13 +18,47 @@ public static class SqlSyntaxHighlighter
         "PURGE", "CREATE", "REPLACE", "PROCEDURE", "PACKAGE", "BODY", "FUNCTION",
         "TRIGGER", "VIEW", "INDEX", "TABLE", "INSERT", "UPDATE", "DELETE", "INTO",
         "VALUES", "SET", "COMMIT", "ROLLBACK", "GRANT", "REVOKE", "EXEC", "EXECUTE",
-        "BEGIN", "END", "EXCEPTION", "WHEN", "THEN", "DECLARE", "CURSOR", "LOOP",
-        "IF", "ELSE", "ELSIF", "NULL", "NOT", "OR", "AND", "IN", "LIKE", "IS",
-        "AS", "ORDER", "BY", "GROUP", "HAVING", "UNION", "ALL", "EXISTS", "BETWEEN",
-        "TRUNCATE", "DATABASE", "SCHEMA", "SYSDBA", "IMMEDIATE", "COMPILE", "REBUILD",
-        "COUNT", "ROWNUM", "DUAL", "EXPDP", "IMPDP", "DIRECTORY", "DUMPFILE", "LOGFILE",
-        "SCHEMAS", "TABLES", "QUERY", "FORCE", "CONNECT", "IDENTIFIED"
+        "BEGIN", "END", "EXCEPTION", "WHEN", "THEN", "OTHERS", "RAISE", "DECLARE",
+        "CURSOR", "LOOP", "IF", "ELSE", "ELSIF", "NULL", "NOT", "OR", "AND", "IN",
+        "LIKE", "IS", "AS", "ORDER", "BY", "GROUP", "HAVING", "UNION", "ALL", "EXISTS",
+        "BETWEEN", "TRUNCATE", "DATABASE", "SCHEMA", "SYSDBA", "IMMEDIATE", "COMPILE",
+        "REBUILD", "COUNT", "ROWNUM", "DUAL", "EXPDP", "IMPDP", "DIRECTORY", "DUMPFILE",
+        "LOGFILE", "SCHEMAS", "TABLES", "QUERY", "FORCE", "CONNECT", "IDENTIFIED",
+        "PRAGMA", "AUTONOMOUS_TRANSACTION", "BULK", "COLLECT", "FORALL", "ROWTYPE", "TYPE"
     };
+
+    private static readonly HashSet<string> OracleFunctions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "DBMS_OUTPUT", "PUT_LINE", "NEW_LINE", "GET_LINE", "ENABLE", "DISABLE",
+        "SQLERRM", "SQLCODE", "NVL", "NVL2", "COALESCE", "TO_CHAR", "TO_DATE",
+        "TO_NUMBER", "SYSDATE", "SYSTIMESTAMP", "SUBSTR", "INSTR", "LENGTH",
+        "TRIM", "UPPER", "LOWER", "REPLACE", "REGEXP_LIKE", "REGEXP_SUBSTR",
+        "CAST", "EXTRACT", "DBMS_SCHEDULER", "UTL_FILE", "UTL_HTTP", "DBMS_LOB"
+    };
+
+    public static bool IsDarkBackground(Brush? backgroundBrush)
+    {
+        if (backgroundBrush is SolidColorBrush scb)
+        {
+            double luminance = (0.299 * scb.Color.R + 0.587 * scb.Color.G + 0.114 * scb.Color.B) / 255.0;
+            return luminance < 0.55;
+        }
+
+        if (backgroundBrush is LinearGradientBrush lgb && lgb.GradientStops.Count > 0)
+        {
+            var c = lgb.GradientStops[0].Color;
+            double luminance = (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255.0;
+            return luminance < 0.55;
+        }
+
+        return true; // Mặc định Terminal là Dark
+    }
+
+    public static void Highlight(RichTextBox rtb, string text, Brush? terminalBackground)
+    {
+        bool isDark = IsDarkBackground(terminalBackground);
+        Highlight(rtb, text, isDark);
+    }
 
     public static void Highlight(RichTextBox rtb, string text, bool isDarkTheme)
     {
@@ -34,22 +68,30 @@ public static class SqlSyntaxHighlighter
             TextAlignment = TextAlignment.Left
         };
 
-        // Bảng màu tối ưu theo Theme
+        // Bảng màu tối ưu hóa tuyệt đối theo độ sáng thực tế của Terminal
         var normalBrush = isDarkTheme
-            ? new SolidColorBrush(Color.FromRgb(0xF8, 0xFA, 0xFC))  // Trắng sáng sắc nét
-            : new SolidColorBrush(Color.FromRgb(0x0F, 0x17, 0x2A)); // Đen than tương phản tuyệt đối
+            ? new SolidColorBrush(Color.FromRgb(0xF1, 0xF5, 0xF9))  // Trắng bạc sáng sắc nét trên nền tối
+            : new SolidColorBrush(Color.FromRgb(0x0F, 0x17, 0x2A)); // Đen than tương phản trên nền sáng
 
         var keywordBrush = isDarkTheme
             ? new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8))  // Cyan sáng
             : new SolidColorBrush(Color.FromRgb(0x02, 0x84, 0xC7)); // Xanh dương đậm
+
+        var functionBrush = isDarkTheme
+            ? new SolidColorBrush(Color.FromRgb(0xC0, 0x84, 0xFC))  // Tím hoa cà sáng
+            : new SolidColorBrush(Color.FromRgb(0x7C, 0x3A, 0xED)); // Tím đậm
 
         var commentBrush = isDarkTheme
             ? new SolidColorBrush(Color.FromRgb(0x4A, 0xDE, 0x80))  // Xanh lá sáng
             : new SolidColorBrush(Color.FromRgb(0x15, 0x80, 0x3D)); // Xanh lá cây đậm
 
         var stringBrush = isDarkTheme
-            ? new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B))  // Cam ấm
+            ? new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24))  // Vàng cam ấm
             : new SolidColorBrush(Color.FromRgb(0xB4, 0x53, 0x09)); // Nâu cam đậm
+
+        var operatorBrush = isDarkTheme
+            ? new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xB8))  // Xám bạc sáng
+            : new SolidColorBrush(Color.FromRgb(0x47, 0x55, 0x69)); // Xám chì
 
         var headingBrush = isDarkTheme
             ? new SolidColorBrush(Color.FromRgb(0x81, 0x8C, 0xF8))  // Tím chàm sáng
@@ -101,7 +143,7 @@ public static class SqlSyntaxHighlighter
             // 4. Dòng mã hoặc văn bản thông thường: Phân tích token chi tiết
             else
             {
-                ColorizeLine(p, line, normalBrush, keywordBrush, commentBrush, stringBrush);
+                ColorizeLine(p, line, normalBrush, keywordBrush, functionBrush, commentBrush, stringBrush, operatorBrush);
             }
 
             doc.Blocks.Add(p);
@@ -115,14 +157,16 @@ public static class SqlSyntaxHighlighter
         string line,
         Brush normalBrush,
         Brush keywordBrush,
+        Brush functionBrush,
         Brush commentBrush,
-        Brush stringBrush)
+        Brush stringBrush,
+        Brush operatorBrush)
     {
         // Regex bóc tách:
         // Group 1: Comment cuối dòng (--.*)
         // Group 2: Chuỗi ký tự ('[^']*')
-        // Group 3: Từ định danh / từ khóa (\b[A-Za-z0-9_]+\b)
-        // Group 4: Các ký tự khác
+        // Group 3: Từ định danh / từ khóa / hàm (\b[A-Za-z_][A-Za-z0-9_]*\b)
+        // Group 4: Các ký tự toán tử, dấu câu (\S+|\s+)
         var regex = new Regex(@"(--.*$)|('([^'\\]|\\.)*')|(\b[A-Za-z_][A-Za-z0-9_]*\b)|(\S+|\s+)", RegexOptions.Compiled);
         var matches = regex.Matches(line);
 
@@ -159,6 +203,14 @@ public static class SqlSyntaxHighlighter
                         FontWeight = FontWeights.Bold
                     });
                 }
+                else if (OracleFunctions.Contains(val))
+                {
+                    p.Inlines.Add(new Run(val)
+                    {
+                        Foreground = functionBrush,
+                        FontWeight = FontWeights.SemiBold
+                    });
+                }
                 else
                 {
                     p.Inlines.Add(new Run(val)
@@ -169,9 +221,10 @@ public static class SqlSyntaxHighlighter
             }
             else
             {
+                // Dấu câu / toán tử
                 p.Inlines.Add(new Run(val)
                 {
-                    Foreground = normalBrush
+                    Foreground = string.IsNullOrWhiteSpace(val) ? normalBrush : operatorBrush
                 });
             }
         }

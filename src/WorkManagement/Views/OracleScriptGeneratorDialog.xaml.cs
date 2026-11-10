@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Microsoft.Win32;
 using WorkManagement.Models;
 using WorkManagement.Services;
@@ -33,14 +34,14 @@ public partial class OracleScriptGeneratorDialog : Window
         }
 
         UpdateContextSummary();
-        SqlSyntaxHighlighter.Highlight(RtbGeneratedScript, "-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng...", IsCurrentThemeDark());
+        SqlSyntaxHighlighter.Highlight(RtbGeneratedScript, "-- Nhấn 'Sinh Script Bằng AI' để tạo mã lệnh Oracle tương ứng...", GetTerminalBackgroundBrush());
     }
 
-    private bool IsCurrentThemeDark()
+    private Brush GetTerminalBackgroundBrush()
     {
-        var settings = _configService.Load();
-        var kind = ThemeService.ParseTheme(settings.ThemeName, settings.IsDarkTheme);
-        return ThemeService.GetThemeOption(kind).IsDarkBase;
+        return TryFindResource("AppTerminalBackgroundBrush") as Brush
+               ?? Application.Current?.TryFindResource("AppTerminalBackgroundBrush") as Brush
+               ?? new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
     }
 
     private string GetCurrentScriptText()
@@ -129,8 +130,7 @@ public partial class OracleScriptGeneratorDialog : Window
             var result = await _aiClient.GenerateOracleScriptAsync(settings.Ai, proj, prompt);
             if (result.Success && !string.IsNullOrWhiteSpace(result.Script))
             {
-                bool isDark = IsCurrentThemeDark();
-                SqlSyntaxHighlighter.Highlight(RtbGeneratedScript, result.Script, isDark);
+                SqlSyntaxHighlighter.Highlight(RtbGeneratedScript, result.Script, GetTerminalBackgroundBrush());
 
                 string explanation = !string.IsNullOrWhiteSpace(result.Explanation)
                     ? result.Explanation

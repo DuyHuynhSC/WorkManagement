@@ -44,4 +44,23 @@ SELECT count(*) FROM dba_users WHERE username = 'TEST_USER';
         string extracted = SqlSyntaxHighlighter.ExtractPureSql(rawText);
         Assert.Equal("DROP USER DLS_RPS CASCADE;", extracted);
     }
+
+    [Theory]
+    [InlineData(0x1E, 0x1E, 0x1E, true)]  // Material Light Terminal #1E1E1E -> Dark
+    [InlineData(0x09, 0x0D, 0x16, true)]  // Material Dark Terminal #090D16 -> Dark
+    [InlineData(0x23, 0x2B, 0x38, true)]  // Neumorphism Terminal #232B38 -> Dark
+    [InlineData(0xFF, 0xFF, 0xFF, false)] // Pure White #FFFFFF -> Light
+    [InlineData(0xF8, 0xFA, 0xFC, false)] // Off White #F8FAFC -> Light
+    public void IsDarkBackground_CalculatesLuminanceAccurately(byte r, byte g, byte b, bool expectedIsDark)
+    {
+        var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+        bool actual = SqlSyntaxHighlighter.IsDarkBackground(brush);
+        Assert.Equal(expectedIsDark, actual);
+    }
+
+    [Fact]
+    public void IsDarkBackground_NullBrush_DefaultsToTrue()
+    {
+        Assert.True(SqlSyntaxHighlighter.IsDarkBackground(null));
+    }
 }
