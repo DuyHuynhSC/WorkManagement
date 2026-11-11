@@ -22,6 +22,16 @@ public class ProjectCleanupProgressEventArgs : EventArgs
 
 public class ProjectCleanupService
 {
+    static ProjectCleanupService()
+    {
+        try
+        {
+            // Cho phép hạ handshake bảo mật để tương thích với Oracle Database 11g, 12c lẫn 19c+
+            OracleConfiguration.SqlNetAllowedLogonVersionClient = OracleAllowedLogonVersionClient.Version11;
+        }
+        catch { }
+    }
+
     private static readonly HashSet<string> SystemTablespaces = new(StringComparer.OrdinalIgnoreCase)
     {
         "SYSTEM", "SYSAUX", "USERS", "TEMP", "UNDOTBS1", "UNDOTBS2", "EXAMPLE", "DEFAULT"
@@ -317,8 +327,7 @@ public class ProjectCleanupService
 
         try
         {
-            using var conn = CreateOracleConnection(project, dbaUser, dbaPassword);
-            await conn.OpenAsync(ct);
+            using var conn = await OpenOracleConnectionAsync(project, dbaUser, dbaPassword, ct);
 
             foreach (var user in users)
             {
@@ -419,9 +428,8 @@ public class ProjectCleanupService
         var users = ParseUserList(project.DbUsers);
         var tablespaces = ParseTablespaceList(project.Tablespace);
 
-        using var conn = CreateOracleConnection(project, dbaUser, dbaPassword);
         Log($"[CLEANUP-DB] Đang kết nối tới Oracle Database {project.HostServer}:{project.Port}/{project.ServiceName} bằng tài khoản '{dbaUser}'...");
-        await conn.OpenAsync(ct);
+        using var conn = await OpenOracleConnectionAsync(project, dbaUser, dbaPassword, ct);
         Log($"[CLEANUP-DB] Kết nối Database thành công!");
 
         // 3.1. Xóa các Users
@@ -560,15 +568,17 @@ public class ProjectCleanupService
 
     #endregion
 
-    public static OracleConnection CreateOracleConnection(ProjectEntry project, string dbaUser, string dbaPassword)
+    public static OracleConnection CreateOracleConnection(ProjectEntry project, string dbaUser, string dbaPassword, bool useSid = false)
     {
         string host = project.HostServer.Trim();
         string port = string.IsNullOrWhiteSpace(project.Port) ? "1521" : project.Port.Trim();
         string service = string.IsNullOrWhiteSpace(project.ServiceName) ? "ORCL" : project.ServiceName.Trim();
 
+        string connectData = useSid ? $"(CONNECT_DATA=(SID={service}))" : $"(CONNECT_DATA=(SERVICE_NAME={service}))";
+
         var csb = new OracleConnectionStringBuilder
         {
-            DataSource = $"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={host})(PORT={port}))(CONNECT_DATA=(SERVICE_NAME={service})))",
+            DataSource = $"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={host})(PORT={port})){connectData})",
             UserID = dbaUser,
             Password = dbaPassword,
             ConnectionTimeout = 15
@@ -584,17 +594,44 @@ public class ProjectCleanupService
         return new OracleConnection(csb.ConnectionString);
     }
 
-    public static async Task<bool> TestConnectionAsync(ProjectEntry project, string dbaUser, string dbaPassword)
+    public static async Task<OracleConnection> OpenOracleConnectionAsync(
+        ProjectEntry project,
+        string dbaUser,
+        string dbaPassword,
+        CancellationToken ct = default)
+    {
+        var conn = CreateOracleConnection(project, dbaUser, dbaPassword, useSid: false);
+        try
+        {
+            await conn.OpenAsync(ct);
+            return conn;
+        }
+        catch (OracleException ex) when (ex.Number == 12514 || ex.Number == 12505)
+        {
+            // ORA-12514: TNS:listener does not currently know of service requested in connect descriptor
+            // ORA-12505: TNS:listener does not currently know of SID given in connect descriptor
+            // Tự động thử lại với SID (rất phổ biến ở Oracle 12c hoặc máy ảo standalone)
+            conn.Dispose();
+            var fallbackConn = CreateOracleConnection(project, dbaUser, dbaPassword, useSid: true);
+            await fallbackConn.OpenAsync(ct);
+            return fallbackConn;
+        }
+    }
+
+    public static async Task<(bool Success, string Message)> TestConnectionAsync(
+        ProjectEntry project,
+        string dbaUser,
+        string dbaPassword,
+        CancellationToken ct = default)
     {
         try
         {
-            using var conn = CreateOracleConnection(project, dbaUser, dbaPassword);
-            await conn.OpenAsync();
-            return true;
+            using var conn = await OpenOracleConnectionAsync(project, dbaUser, dbaPassword, ct);
+            return (true, "Kết nối thành công!");
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            return (false, ex.Message);
         }
     }
 
@@ -616,8 +653,7 @@ public class ProjectCleanupService
             return new List<string>();
         }
 
-        using var conn = CreateOracleConnection(project, dbaUser, dbaPassword);
-        await conn.OpenAsync(ct);
+        using var conn = await OpenOracleConnectionAsync(project, dbaUser, dbaPassword, ct);
 
         var paramNames = new List<string>();
         using var cmd = conn.CreateCommand();

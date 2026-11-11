@@ -319,4 +319,55 @@ public class ProjectManagementTests
         var uniqueIds = allEntries.Select(p => p.Id).Distinct().ToList();
         Assert.Equal(4, uniqueIds.Count);
     }
+
+    [Fact]
+    public void OracleConfiguration_AllowsLogonVersion11_ForCompatibilityWithOracle12c()
+    {
+        // Kích hoạt static constructor
+        _ = new ProjectCleanupService();
+
+        var prop = typeof(Oracle.ManagedDataAccess.Client.OracleConfiguration).GetProperty("SqlNetAllowedLogonVersionClient");
+        Assert.NotNull(prop);
+        Assert.True(prop.CanWrite);
+
+        // Thiết lập không ném Exception
+        var exception = Record.Exception(() =>
+        {
+            Oracle.ManagedDataAccess.Client.OracleConfiguration.SqlNetAllowedLogonVersionClient =
+                Oracle.ManagedDataAccess.Client.OracleAllowedLogonVersionClient.Version11;
+        });
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void CreateOracleConnection_GeneratesServiceNameAndSidDescriptors()
+    {
+        var project = new ProjectEntry
+        {
+            HostServer = "192.168.1.100",
+            Port = "1521",
+            ServiceName = "ORCL"
+        };
+
+        using var connService = ProjectCleanupService.CreateOracleConnection(project, "SYSTEM", "pass123", useSid: false);
+        Assert.Contains("SERVICE_NAME=ORCL", connService.ConnectionString);
+
+        using var connSid = ProjectCleanupService.CreateOracleConnection(project, "SYSTEM", "pass123", useSid: true);
+        Assert.Contains("SID=ORCL", connSid.ConnectionString);
+    }
+
+    [Fact]
+    public async Task TestConnectionAsync_ReturnsDetailedErrorMessageOnFailure()
+    {
+        var project = new ProjectEntry
+        {
+            HostServer = "127.0.0.1",
+            Port = "9999",
+            ServiceName = "NONEXISTENT"
+        };
+
+        var (success, message) = await ProjectCleanupService.TestConnectionAsync(project, "SYSTEM", "wrongpass");
+        Assert.False(success);
+        Assert.False(string.IsNullOrWhiteSpace(message));
+    }
 }

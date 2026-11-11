@@ -168,7 +168,7 @@ public partial class EditProjectDialog : Window
             ServiceName = TxtServiceName.Text.Trim()
         };
 
-        bool ok = await ProjectCleanupService.TestConnectionAsync(tempProject, dbaUser, dbaPass);
+        var (ok, errorMsg) = await ProjectCleanupService.TestConnectionAsync(tempProject, dbaUser, dbaPass);
         BtnTestDbConnection.IsEnabled = true;
 
         if (ok)
@@ -179,7 +179,7 @@ public partial class EditProjectDialog : Window
         else
         {
             TxtStatusMessage.Text = "Kết nối Database THẤT BẠI.";
-            MessageBox.Show(this, $"Không thể kết nối tới Oracle Database tại {host}:{tempProject.Port}/{tempProject.ServiceName}.\nVui lòng kiểm tra lại IP, Port, Service Name hoặc User/Password DBA.", "Lỗi kết nối", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, $"Không thể kết nối tới Oracle Database tại {host}:{tempProject.Port}/{tempProject.ServiceName}.\n\nChi tiết lỗi từ Oracle:\n{errorMsg}\n\nVui lòng kiểm tra lại IP, Port, Service Name / SID hoặc User/Password DBA.", "Lỗi kết nối", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
