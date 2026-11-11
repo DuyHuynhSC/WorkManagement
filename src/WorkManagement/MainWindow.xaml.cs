@@ -35,6 +35,7 @@ public partial class MainWindow : Window
     private bool _isExplicitExit;
     private bool _hasShownTrayBalloonOnce;
     private bool _isCommandPaletteOpen;
+    private readonly AiDevOpsCommandService _aiDevOpsService = new();
 
     public SystemTrayService? TrayService => _systemTrayService;
 
@@ -1453,7 +1454,12 @@ public partial class MainWindow : Window
         try
         {
             var items = BuildCommandPaletteItems();
-            var palette = new CommandPaletteWindow(items);
+            var palette = new CommandPaletteWindow(items, async (query) =>
+            {
+                var result = await _aiDevOpsService.DispatchCommandAsync(query);
+                WireAiActionResult(result);
+                return result;
+            });
 
             if (IsVisible && WindowState != WindowState.Minimized)
             {
@@ -1474,6 +1480,121 @@ public partial class MainWindow : Window
         finally
         {
             _isCommandPaletteOpen = false;
+        }
+    }
+
+    private void WireAiActionResult(AiDevOpsActionResult result)
+    {
+        switch (result.ActionType)
+        {
+            case AiDevOpsActionType.ConnectRdp:
+                var vmService = new VmManagerService();
+                var targetVm = vmService.LoadAll().FirstOrDefault(v =>
+                    (!string.IsNullOrWhiteSpace(v.Ip) && v.Ip.Equals(result.TargetParam, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(v.MachineName) && v.MachineName.Equals(result.TargetParam, StringComparison.OrdinalIgnoreCase)));
+                if (targetVm != null)
+                {
+                    result.ExecutableAction = async () =>
+                    {
+                        var rdpService = new RemoteDesktopService(_logger);
+                        await rdpService.ConnectAsync(targetVm);
+                    };
+                }
+                else
+                {
+                    result.ExecutableAction = () =>
+                    {
+                        NavigateAndRestore(AppNavView.VmManager);
+                        VmManagerControl?.SetSearchQuery(result.TargetParam);
+                    };
+                }
+                break;
+
+            case AiDevOpsActionType.FilterVms:
+                result.ExecutableAction = () =>
+                {
+                    NavigateAndRestore(AppNavView.VmManager);
+                    VmManagerControl?.SetSearchQuery(result.TargetParam);
+                };
+                break;
+
+            case AiDevOpsActionType.FilterProjects:
+                result.ExecutableAction = () =>
+                {
+                    NavigateAndRestore(AppNavView.ProjectManager);
+                    ProjectManagerControl?.SetSearchQuery(result.TargetParam);
+                };
+                break;
+
+            case AiDevOpsActionType.NavigateView:
+                if (Enum.TryParse<AppNavView>(result.TargetParam, ignoreCase: true, out var navView))
+                {
+                    result.ExecutableAction = () => NavigateAndRestore(navView);
+                }
+                else
+                {
+                    result.ExecutableAction = () => NavigateAndRestore(AppNavView.Dashboard);
+                }
+                break;
+
+            case AiDevOpsActionType.OpenOracleScript:
+                result.ExecutableAction = () =>
+                {
+                    var projService = new ProjectManagerService();
+                    var allProjs = projService.LoadAll();
+                    var matchedProj = allProjs.FirstOrDefault(p =>
+                        !string.IsNullOrWhiteSpace(p.ProjectName) && p.ProjectName.Contains(result.TargetParam, StringComparison.OrdinalIgnoreCase))
+                        ?? allProjs.FirstOrDefault();
+
+                    if (matchedProj != null)
+                    {
+                        var dialog = new OracleScriptGeneratorDialog(allProjs, matchedProj)
+                        {
+                            Owner = this
+                        };
+                        dialog.ShowDialog();
+                    }
+                    else
+                    {
+                        NavigateAndRestore(AppNavView.ProjectManager);
+                    }
+                };
+                break;
+
+            case AiDevOpsActionType.OpenProjectFolder:
+                result.ExecutableAction = () =>
+                {
+                    if (Directory.Exists(result.TargetParam))
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", result.TargetParam);
+                    }
+                    else
+                    {
+                        var projService = new ProjectManagerService();
+                        var proj = projService.LoadAll().FirstOrDefault(p =>
+                            !string.IsNullOrWhiteSpace(p.ProjectName) && p.ProjectName.Contains(result.TargetParam, StringComparison.OrdinalIgnoreCase));
+                        if (proj != null && !string.IsNullOrWhiteSpace(proj.SourceFolder) && Directory.Exists(proj.SourceFolder))
+                        {
+                            System.Diagnostics.Process.Start("explorer.exe", proj.SourceFolder);
+                        }
+                        else
+                        {
+                            NavigateAndRestore(AppNavView.ProjectManager);
+                        }
+                    }
+                };
+                break;
+
+            case AiDevOpsActionType.DirectAnswer:
+            default:
+                result.ExecutableAction = () =>
+                {
+                    if (!string.IsNullOrWhiteSpace(result.TargetParam))
+                    {
+                        try { Clipboard.SetText(result.TargetParam); } catch { }
+                    }
+                };
+                break;
         }
     }
 

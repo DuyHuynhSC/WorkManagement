@@ -1116,5 +1116,14 @@ public partial class ProjectManagerView : UserControl
         }
     }
 
+    public void SetSearchQuery(string query)
+    {
+        if (TxtSearch != null)
+        {
+            TxtSearch.Text = query ?? string.Empty;
+        }
+        ApplyFilter();
+    }
+
     #endregion
 }

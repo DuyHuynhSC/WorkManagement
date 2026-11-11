@@ -1004,6 +1004,15 @@ public partial class VmManagerView : UserControl
             MessageBox.Show(parentWindow, $"Lỗi khi xuất file Excel: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    public void SetSearchQuery(string query)
+    {
+        if (TxtSearch != null)
+        {
+            TxtSearch.Text = query ?? string.Empty;
+        }
+        ApplyFilter();
+    }
 }
 
 public class ColumnFilterItem : INotifyPropertyChanged

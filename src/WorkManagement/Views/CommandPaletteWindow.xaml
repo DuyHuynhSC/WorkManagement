@@ -28,70 +28,126 @@
             </Grid.RowDefinitions>
 
             <!-- SEARCH INPUT HEADER -->
-            <Border Grid.Row="0" Padding="14,12" BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="0,0,0,1">
+            <Border Grid.Row="0" Padding="14,10" BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="0,0,0,1">
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <materialDesign:PackIcon Grid.Column="0" Kind="ConsoleLine" Width="22" Height="22"
+                    <materialDesign:PackIcon Grid.Row="0" Grid.Column="0" Kind="ConsoleLine" Width="22" Height="22"
                                              Foreground="{DynamicResource AppPrimaryButtonBackground}"
                                              VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-                    <TextBox x:Name="TxtQuery" Grid.Column="1"
-                             FontSize="15" FontWeight="SemiBold"
+                    <TextBox x:Name="TxtQuery" Grid.Row="0" Grid.Column="1"
+                             FontSize="14.5" FontWeight="SemiBold"
                              BorderThickness="0" Background="Transparent"
                              Foreground="{DynamicResource AppPrimaryTextBrush}"
-                             materialDesign:HintAssist.Hint="Gõ tên máy ảo (mở RDP), tên dự án, FTP profile hoặc lệnh..."
+                             materialDesign:HintAssist.Hint="Gõ tên máy ảo, dự án, hoặc câu lệnh AI DevOps (Ctrl+Enter)..."
                              VerticalContentAlignment="Center"
-                             TextChanged="TxtQuery_TextChanged"/>
+                             TextChanged="TxtQuery_TextChanged"
+                             KeyDown="TxtQuery_KeyDown"/>
 
-                    <Border Grid.Column="2" Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
+                    <Button x:Name="BtnAiDispatch" Grid.Row="0" Grid.Column="2"
+                            Style="{StaticResource AppPrimaryButtonStyle}"
+                            Height="28" Padding="10,0" Margin="8,0,0,0"
+                            Click="BtnAiDispatch_Click"
+                            ToolTip="Yêu cầu AI DevOps phân tích câu lệnh tự nhiên (Ctrl + Enter)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="RobotOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="AI (Ctrl+Enter)" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Border Grid.Row="0" Grid.Column="3" Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
                             CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="8,0,0,0">
                         <TextBlock Text="ESC để đóng" FontSize="10.5" Opacity="0.7" FontWeight="SemiBold"
                                    Foreground="{DynamicResource AppPrimaryTextBrush}"/>
                     </Border>
+
+                    <!-- AI Progress Bar -->
+                    <ProgressBar x:Name="BusyBarAi" Grid.Row="1" Grid.ColumnSpan="4"
+                                 IsIndeterminate="True" Height="3" Margin="0,8,0,0"
+                                 Visibility="Collapsed" Foreground="{DynamicResource AppAccentHighlightBrush}"/>
                 </Grid>
             </Border>
 
-            <!-- RESULTS LIST -->
-            <ListBox x:Name="LstResults" Grid.Row="1"
-                     Background="Transparent" BorderThickness="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     MouseDoubleClick="LstResults_MouseDoubleClick"
-                     Padding="6">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
-                        <Setter Property="Padding" Value="10,7"/>
-                        <Setter Property="Margin" Value="0,1"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <DockPanel LastChildFill="True">
-                            <Border DockPanel.Dock="Right" Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
-                                    CornerRadius="4" Padding="7,2" VerticalAlignment="Center" Margin="8,0,0,0">
-                                <TextBlock Text="{Binding CategoryBadge}" FontSize="10.5" FontWeight="Bold"
-                                           Foreground="{DynamicResource AppSectionIconBrush}"/>
-                            </Border>
+            <!-- RESULTS & AI ANSWER CONTENT -->
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-                            <materialDesign:PackIcon Kind="{Binding IconKind}" Width="20" Height="20"
-                                                     Foreground="{DynamicResource AppSectionIconBrush}"
-                                                     VerticalAlignment="Center" Margin="0,0,10,0" DockPanel.Dock="Left"/>
-
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="13"
-                                           Foreground="{DynamicResource AppPrimaryTextBrush}" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding Subtitle}" FontSize="11" Opacity="0.75"
-                                           Foreground="{DynamicResource AppSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
+                <!-- AI DIRECT ANSWER BANNER (If present) -->
+                <Border x:Name="PanelAiCard" Grid.Row="0" Margin="8,6,8,2" Padding="10,8"
+                        Background="{DynamicResource AppSecondarySubtleBackgroundBrush}"
+                        BorderBrush="{DynamicResource AppAccentHighlightBrush}"
+                        BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                <materialDesign:PackIcon Kind="Sparkles" Width="14" Height="14" Foreground="{DynamicResource AppAccentHighlightBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock x:Name="TxtAiCardTitle" Text="AI DevOps Phản Hồi" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource AppAccentHighlightBrush}"/>
                             </StackPanel>
-                        </DockPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                            <TextBlock x:Name="TxtAiCardContent" Text="..." FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource AppPrimaryTextBrush}" LineHeight="17"/>
+                        </StackPanel>
+                        <Button x:Name="BtnExecuteAiCard" Grid.Column="1" Style="{StaticResource AppPrimaryButtonStyle}"
+                                Height="26" Padding="8,0" Margin="8,0,0,0" VerticalAlignment="Center"
+                                Click="BtnExecuteAiCard_Click" Visibility="Collapsed">
+                            <TextBlock Text="Thực thi" FontSize="10.5" FontWeight="Bold"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- RESULTS LIST -->
+                <ListBox x:Name="LstResults" Grid.Row="1"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         MouseDoubleClick="LstResults_MouseDoubleClick"
+                         Padding="6">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+                            <Setter Property="Padding" Value="10,7"/>
+                            <Setter Property="Margin" Value="0,1"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel LastChildFill="True">
+                                <Border DockPanel.Dock="Right" Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
+                                        CornerRadius="4" Padding="7,2" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding CategoryBadge}" FontSize="10.5" FontWeight="Bold"
+                                               Foreground="{DynamicResource AppSectionIconBrush}"/>
+                                </Border>
+
+                                <materialDesign:PackIcon Kind="{Binding IconKind}" Width="20" Height="20"
+                                                         Foreground="{DynamicResource AppSectionIconBrush}"
+                                                         VerticalAlignment="Center" Margin="0,0,10,0" DockPanel.Dock="Left"/>
+
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="13"
+                                               Foreground="{DynamicResource AppPrimaryTextBrush}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Opacity="0.75"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
 
             <!-- FOOTER HINTS -->
             <Border Grid.Row="2" Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
@@ -99,8 +155,8 @@
                 <DockPanel>
                     <TextBlock x:Name="TxtResultCount" Text="0 kết quả" FontSize="11" Opacity="0.75"
                                Foreground="{DynamicResource AppPrimaryTextBrush}" VerticalAlignment="Center"/>
-                    <TextBlock Text="↑↓ Di chuyển   •   Enter: Thực thi ngay   •   Ctrl+K: Mở nhanh mọi lúc"
-                               FontSize="11" Opacity="0.65" HorizontalAlignment="Right" VerticalAlignment="Center"
+                    <TextBlock Text="↑↓ Di chuyển   •   Enter: Thực thi   •   Ctrl+Enter: AI Phân Tích   •   ESC: Đóng"
+                               FontSize="11" Opacity="0.7" HorizontalAlignment="Right" VerticalAlignment="Center"
                                Foreground="{DynamicResource AppPrimaryTextBrush}"/>
                 </DockPanel>
             </Border>
