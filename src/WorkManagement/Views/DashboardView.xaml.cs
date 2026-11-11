@@ -22,12 +22,22 @@ public class ExpiringVmRow
     public int DaysRemaining { get; set; }
 }
 
+public class MissingSourceFolderRow
+{
+    public string No { get; set; } = string.Empty;
+    public string ProjectName { get; set; } = string.Empty;
+    public string SourceFolder { get; set; } = string.Empty;
+    public string PersonInCharge { get; set; } = string.Empty;
+    public string StatusText { get; set; } = "Thư mục không tồn tại";
+}
+
 public partial class DashboardView : UserControl
 {
     private readonly VmManagerService _vmService = new();
     private readonly ProjectManagerService _projectService = new();
     private readonly ConfigService _configService = new();
     private readonly ObservableCollection<ExpiringVmRow> _expiringVms = new();
+    private readonly ObservableCollection<MissingSourceFolderRow> _missingSourceFolders = new();
 
     public event EventHandler? OpenCommandPaletteRequested;
 
@@ -35,6 +45,7 @@ public partial class DashboardView : UserControl
     {
         InitializeComponent();
         GridExpiringVms.ItemsSource = _expiringVms;
+        GridMissingSourceFolders.ItemsSource = _missingSourceFolders;
     }
 
     public void LoadDashboard()
@@ -83,15 +94,34 @@ public partial class DashboardView : UserControl
                 ? $"⚠️ {_expiringVms.Count} máy sắp/đã hết hạn"
                 : "✅ Tất cả còn hạn sử dụng";
 
-            // 2. Project KPI
+            // 2. Project KPI & Missing Q:\ Source Folders
             int distinctDbHosts = projects
                 .Select(p => p.HostServer?.Trim())
                 .Where(h => !string.IsNullOrEmpty(h))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count();
 
+            _missingSourceFolders.Clear();
+            var missingFolders = CheckMissingSourceFolders(projects);
+            foreach (var mf in missingFolders)
+            {
+                _missingSourceFolders.Add(mf);
+            }
+
             TxtKpiProjectTotal.Text = projects.Count.ToString();
-            TxtKpiProjectSub.Text = $"{distinctDbHosts} máy chủ Oracle DB";
+            TxtKpiProjectSub.Text = _missingSourceFolders.Count > 0
+                ? $"{distinctDbHosts} DB servers | ⚠️ {_missingSourceFolders.Count} folder Q: lỗi"
+                : $"{distinctDbHosts} máy chủ Oracle DB";
+
+            if (TxtMissingFoldersCountBadge != null)
+            {
+                TxtMissingFoldersCountBadge.Text = _missingSourceFolders.Count > 0
+                    ? $"⚠️ Phát hiện {_missingSourceFolders.Count} thư mục không tồn tại"
+                    : string.Empty;
+                TxtMissingFoldersCountBadge.Visibility = _missingSourceFolders.Count > 0
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
 
             // 3. FTP Profiles & Security KPI
             int profileCount = ftpSettings.Profiles?.Count ?? 1;
@@ -144,6 +174,52 @@ public partial class DashboardView : UserControl
         }
 
         return DateTime.TryParse(trimmed, out parsed);
+    }
+
+    public static bool IsQDrivePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        string trimmed = path.Trim();
+        return trimmed.StartsWith(@"Q:\", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.StartsWith(@"Q:/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static List<MissingSourceFolderRow> CheckMissingSourceFolders(IEnumerable<ProjectEntry> projects, Func<string, bool>? directoryExists = null)
+    {
+        directoryExists ??= Directory.Exists;
+        var result = new List<MissingSourceFolderRow>();
+        if (projects == null) return result;
+
+        foreach (var p in projects)
+        {
+            if (IsQDrivePath(p.SourceFolder))
+            {
+                string folder = p.SourceFolder.Trim();
+                bool exists;
+                try
+                {
+                    exists = directoryExists(folder);
+                }
+                catch
+                {
+                    exists = false;
+                }
+
+                if (!exists)
+                {
+                    result.Add(new MissingSourceFolderRow
+                    {
+                        No = p.No,
+                        ProjectName = p.ProjectName,
+                        SourceFolder = folder,
+                        PersonInCharge = p.PersonInCharge,
+                        StatusText = "Thư mục không tồn tại"
+                    });
+                }
+            }
+        }
+
+        return result;
     }
 
     private static (long TotalBytes, int FileCount) GetDirectoryStats(string? path)

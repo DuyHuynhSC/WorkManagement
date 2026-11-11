@@ -229,6 +229,59 @@
                 </materialDesign:Card>
             </Grid>
 
+            <!-- MIDDLE-BOTTOM: MISSING Q:\ SOURCE FOLDERS ALERT -->
+            <materialDesign:Card Margin="0,0,0,12" Padding="14,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="180"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="FolderAlertOutline" Width="19" Height="19"
+                                                     Foreground="{DynamicResource AppDangerButtonBackground}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Cảnh Báo Thư Mục Nguồn Dự Án (Q:\) Không Tồn Tại" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock x:Name="TxtMissingFoldersCountBadge" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                   FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource AppDangerButtonBackground}" VerticalAlignment="Center"/>
+                    </DockPanel>
+
+                    <DataGrid x:Name="GridMissingSourceFolders" Grid.Row="1"
+                              AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                              HeadersVisibility="Column" SelectionUnit="FullRow"
+                              GridLinesVisibility="Horizontal"
+                              materialDesign:DataGridAssist.CellPadding="8,4"
+                              materialDesign:DataGridAssist.ColumnHeaderPadding="8,5"
+                              BorderThickness="1" BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Mã DA" Binding="{Binding No}" Width="80" FontWeight="Bold"/>
+                            <DataGridTextColumn Header="Tên Dự Án" Binding="{Binding ProjectName}" Width="180" FontWeight="SemiBold"/>
+                            <DataGridTextColumn Header="Thư Mục Nguồn (Source Folder)" Binding="{Binding SourceFolder}" Width="*"/>
+                            <DataGridTextColumn Header="Người Phụ Trách" Binding="{Binding PersonInCharge}" Width="140"/>
+                            <DataGridTextColumn Header="Trạng Thái" Binding="{Binding StatusText}" Width="160"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=GridMissingSourceFolders}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <materialDesign:PackIcon Kind="CheckDecagramOutline" Width="32" Height="32" HorizontalAlignment="Center"
+                                                 Foreground="{DynamicResource AppSecondaryTextBrush}" Opacity="0.45" Margin="0,0,0,6"/>
+                        <TextBlock Text="Tất cả các thư mục nguồn Q:\ của dự án đều hợp lệ và tồn tại."
+                                   FontSize="12" Foreground="{DynamicResource AppSecondaryTextBrush}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </materialDesign:Card>
+
             <!-- BOTTOM ROW: AUDIT LOG VIEWER -->
             <materialDesign:Card Padding="14,12">
                 <Grid>

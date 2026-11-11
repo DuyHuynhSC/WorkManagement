@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using WorkManagement.Models;
 using WorkManagement.Services;
+using WorkManagement.Views;
 using Xunit;
 
 namespace WorkManagement.Tests;
@@ -369,5 +372,66 @@ public class ProjectManagementTests
         var (success, message) = await ProjectCleanupService.TestConnectionAsync(project, "SYSTEM", "wrongpass");
         Assert.False(success);
         Assert.False(string.IsNullOrWhiteSpace(message));
+    }
+
+    [Theory]
+    [InlineData(@"Q:\Source\Project1", true)]
+    [InlineData(@"q:\source\project2", true)]
+    [InlineData(@"Q:/Source/Project3", true)]
+    [InlineData(@"  Q:\WithSpaces  ", true)]
+    [InlineData(@"C:\Source\Project1", false)]
+    [InlineData(@"D:\Data", false)]
+    [InlineData(@"\\server\share\Q", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(null, false)]
+    public void IsQDrivePath_ValidatesPrefixCorrectly(string? path, bool expected)
+    {
+        bool actual = DashboardView.IsQDrivePath(path);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void CheckMissingSourceFolders_FiltersAndDetectsMissingQFolders()
+    {
+        var projects = new List<ProjectEntry>
+        {
+            new() { No = "101", ProjectName = "ProjExist", SourceFolder = @"Q:\ExistFolder", PersonInCharge = "Alice" },
+            new() { No = "102", ProjectName = "ProjMissing1", SourceFolder = @"Q:\MissingFolder1", PersonInCharge = "Bob" },
+            new() { No = "103", ProjectName = "ProjNotQ", SourceFolder = @"C:\OtherFolder", PersonInCharge = "Charlie" },
+            new() { No = "104", ProjectName = "ProjEmpty", SourceFolder = "", PersonInCharge = "David" },
+            new() { No = "105", ProjectName = "ProjMissing2", SourceFolder = @"q:\missingfolder2\", PersonInCharge = "Eve" }
+        };
+
+        // Mock filesystem check
+        bool MockDirectoryExists(string path)
+        {
+            return path.Equals(@"Q:\ExistFolder", StringComparison.OrdinalIgnoreCase);
+        }
+
+        var missing = DashboardView.CheckMissingSourceFolders(projects, MockDirectoryExists);
+
+        Assert.Equal(2, missing.Count);
+
+        Assert.Equal("102", missing[0].No);
+        Assert.Equal("ProjMissing1", missing[0].ProjectName);
+        Assert.Equal(@"Q:\MissingFolder1", missing[0].SourceFolder);
+        Assert.Equal("Bob", missing[0].PersonInCharge);
+        Assert.False(string.IsNullOrEmpty(missing[0].StatusText));
+
+        Assert.Equal("105", missing[1].No);
+        Assert.Equal("ProjMissing2", missing[1].ProjectName);
+        Assert.Equal(@"q:\missingfolder2\", missing[1].SourceFolder);
+        Assert.Equal("Eve", missing[1].PersonInCharge);
+    }
+
+    [Fact]
+    public void CheckMissingSourceFolders_HandlesNullOrEmptyCollections()
+    {
+        var emptyResult1 = DashboardView.CheckMissingSourceFolders(null!);
+        Assert.Empty(emptyResult1);
+
+        var emptyResult2 = DashboardView.CheckMissingSourceFolders(new List<ProjectEntry>());
+        Assert.Empty(emptyResult2);
     }
 }
