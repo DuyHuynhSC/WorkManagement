@@ -59,6 +59,108 @@ public class ProjectManagementTests
     }
 
     [Fact]
+    public void ProjectEntry_CloneAsNew_CreatesNewIdAndResetsSelection()
+    {
+        var original = new ProjectEntry
+        {
+            No = "316",
+            ProjectName = "UTSUGI",
+            Description = "Customize V10",
+            SourceFolder = @"Q:\V10_UTG",
+            HostServer = "172.16.6.23",
+            DbUsers = "UTG_RPS, UTG_USR1",
+            Tablespace = "TS_UTSUGI",
+            IsSelected = true
+        };
+
+        var clone = original.CloneAsNew("UTSUGI - Copy", "317");
+
+        Assert.NotEqual(original.Id, clone.Id);
+        Assert.Equal("UTSUGI - Copy", clone.ProjectName);
+        Assert.Equal("317", clone.No);
+        Assert.False(clone.IsSelected);
+        Assert.Equal(original.SourceFolder, clone.SourceFolder);
+        Assert.Equal(original.HostServer, clone.HostServer);
+        Assert.Equal(original.DbUsers, clone.DbUsers);
+        Assert.Equal(original.Tablespace, clone.Tablespace);
+        Assert.Equal(original.Description, clone.Description);
+    }
+
+    [Fact]
+    public void ProjectEntry_CloneAsNew_KeepsOriginalNameWhenNewNameNull()
+    {
+        var original = new ProjectEntry { ProjectName = "ABC" };
+        var clone = original.CloneAsNew();
+
+        Assert.NotEqual(original.Id, clone.Id);
+        Assert.Equal("ABC", clone.ProjectName);
+        Assert.False(clone.IsSelected);
+    }
+
+    [Fact]
+    public void GenerateUniqueCloneName_FirstCopy()
+    {
+        var existing = new[] { "Alpha", "Beta" };
+        string result = ProjectManagerService.GenerateUniqueCloneName("Alpha", existing);
+        Assert.Equal("Alpha - Copy", result);
+    }
+
+    [Fact]
+    public void GenerateUniqueCloneName_SecondCopy()
+    {
+        var existing = new[] { "Alpha", "Alpha - Copy" };
+        string result = ProjectManagerService.GenerateUniqueCloneName("Alpha", existing);
+        Assert.Equal("Alpha - Copy (2)", result);
+    }
+
+    [Fact]
+    public void GenerateUniqueCloneName_ThirdCopy()
+    {
+        var existing = new[] { "Alpha", "Alpha - Copy", "Alpha - Copy (2)" };
+        string result = ProjectManagerService.GenerateUniqueCloneName("Alpha", existing);
+        Assert.Equal("Alpha - Copy (3)", result);
+    }
+
+    [Fact]
+    public void GenerateUniqueCloneName_CaseInsensitive()
+    {
+        var existing = new[] { "alpha", "ALPHA - COPY" };
+        string result = ProjectManagerService.GenerateUniqueCloneName("Alpha", existing);
+        Assert.Equal("Alpha - Copy (2)", result);
+    }
+
+    [Fact]
+    public void GenerateUniqueCloneName_EmptyName_UsesDefault()
+    {
+        var existing = Array.Empty<string>();
+        string result = ProjectManagerService.GenerateUniqueCloneName("", existing);
+        Assert.Equal("Project - Copy", result);
+    }
+
+    [Fact]
+    public void CreateClone_CopiesAllFieldsWithNewId()
+    {
+        var source = new ProjectEntry
+        {
+            No = "100",
+            ProjectName = "MyProject",
+            HostServer = "192.168.1.1",
+            DbUsers = "USER1",
+            Tablespace = "TS_MY"
+        };
+
+        var clone = ProjectManagerService.CreateClone(source, "MyProject - Copy", "101");
+
+        Assert.NotEqual(source.Id, clone.Id);
+        Assert.Equal("MyProject - Copy", clone.ProjectName);
+        Assert.Equal("101", clone.No);
+        Assert.Equal(source.HostServer, clone.HostServer);
+        Assert.Equal(source.DbUsers, clone.DbUsers);
+        Assert.Equal(source.Tablespace, clone.Tablespace);
+        Assert.False(clone.IsSelected);
+    }
+
+    [Fact]
     public void ParseUserList_StripsCommentsAndHandlesDelimiters()
     {
         string rawUsers = "COR_RPS, COR_USR1, COR_USR9, \r\nCOR_LOG\nCOR_TST_USR1(Dùng để test script); USER_EXTRA(ghi chu)";

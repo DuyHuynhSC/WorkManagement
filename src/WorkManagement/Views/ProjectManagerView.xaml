@@ -6,6 +6,39 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" 
              d:DesignHeight="700" d:DesignWidth="1100">
+    <UserControl.Resources>
+        <ContextMenu x:Key="ProjectRowContextMenu">
+            <MenuItem Header="Clone Dự Án (Nhân Bản)" Click="MenuItemClone_Click" InputGestureText="Ctrl+D">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="ContentDuplicate" Width="16" Height="16"
+                                             Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Chỉnh Sửa Dự Án" Click="MenuItemEdit_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Mở Source Folder" Click="MenuItemOpenFolder_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Sao Chép Đường Dẫn" Click="MenuItemCopyFolder_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="ContentCopy" Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Xóa Dòng Khỏi Grid" Click="MenuItemDeleteRow_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16"
+                                             Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                </MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+    </UserControl.Resources>
     <Grid Margin="12,10,12,10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -54,6 +87,17 @@
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="FolderPlusOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBlock Text="Thêm Dự Án" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- NÚT CLONE DỰ ÁN -->
+                    <Button x:Name="BtnCloneProject" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnCloneProject_Click"
+                            ToolTip="Chọn 1 dự án bất kỳ trong danh sách (click dòng hoặc tích checkbox) sau đó bấm để clone ra dự án mới (Phím tắt: Ctrl+D)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ContentDuplicate" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                     Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                            <TextBlock Text="Clone Dự Án" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"/>
                         </StackPanel>
                     </Button>
 
@@ -157,7 +201,8 @@
                       ScrollViewer.CanContentScroll="True"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                      KeyDown="GridProjects_KeyDown">
                 <DataGrid.CellStyle>
                     <Style TargetType="DataGridCell" BasedOn="{StaticResource MaterialDesignDataGridCell}">
                         <Setter Property="Padding" Value="8,4"/>
@@ -169,6 +214,8 @@
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="Foreground" Value="{DynamicResource AppPrimaryTextBrush}"/>
                         <EventSetter Event="MouseDoubleClick" Handler="GridProjects_MouseDoubleClick"/>
+                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
+                        <Setter Property="ContextMenu" Value="{StaticResource ProjectRowContextMenu}"/>
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
@@ -235,6 +282,39 @@
                                         HorizontalAlignment="Center" VerticalAlignment="Center"
                                         Click="BtnEdit_Click" ToolTip="Chỉnh sửa thông tin dự án" Cursor="Hand">
                                     <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16"
+                                                             Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- CLONE BUTTON COLUMN -->
+                    <DataGridTemplateColumn Width="48" MinWidth="44" MaxWidth="56" CanUserResize="False">
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource MaterialDesignDataGridColumnHeader}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
+                        <DataGridTemplateColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource MaterialDesignDataGridCell}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </DataGridTemplateColumn.CellStyle>
+                        <DataGridTemplateColumn.Header>
+                            <materialDesign:PackIcon Kind="ContentDuplicate" Width="16" Height="16"
+                                                     Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     ToolTip="Nhân bản (Clone) dự án"/>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                        Width="32" Height="28" Padding="0"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Click="BtnCloneRow_Click" ToolTip="Nhân bản (Clone) dự án này" Cursor="Hand">
+                                    <materialDesign:PackIcon Kind="ContentDuplicate" Width="16" Height="16"
                                                              Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
                                 </Button>
                             </DataTemplate>

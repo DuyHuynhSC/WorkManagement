@@ -205,6 +205,10 @@ public partial class ProjectManagerView : UserControl
             {
                 col.Width = new DataGridLength(60);
             }
+            else if (!col.CanUserResize)
+            {
+                // Giữ nguyên độ rộng cố định cho các cột nút thao tác (Edit, Clone...)
+            }
             else if (header == "Thao Tác")
             {
                 col.Width = new DataGridLength(85);
@@ -463,7 +467,7 @@ public partial class ProjectManagerView : UserControl
 
     #endregion
 
-    #region Add & Edit Project
+    #region Add, Edit & Clone Project
 
     private void BtnAddProject_Click(object sender, RoutedEventArgs e)
     {
@@ -477,6 +481,179 @@ public partial class ProjectManagerView : UserControl
             _collectionView?.Refresh();
             UpdateSummary();
             UpdateSelectAllState();
+        }
+    }
+
+    private void BtnCloneProject_Click(object sender, RoutedEventArgs e)
+    {
+        var checkedEntries = _allEntries.Where(x => x.IsSelected).ToList();
+
+        if (checkedEntries.Count == 1)
+        {
+            CloneProject(checkedEntries[0]);
+            return;
+        }
+
+        if (checkedEntries.Count > 1)
+        {
+            MessageBox.Show(Window.GetWindow(this),
+                "Bạn đang tích chọn nhiều hơn 1 dự án.\nVui lòng chỉ chọn 1 dự án để nhân bản (clone).",
+                "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (GridProjects.SelectedItem is ProjectEntry selectedRow)
+        {
+            CloneProject(selectedRow);
+            return;
+        }
+
+        MessageBox.Show(Window.GetWindow(this),
+            "Vui lòng chọn 1 dự án cần nhân bản (clone) bằng cách:\n- Click chọn một dòng dự án trong bảng, hoặc\n- Tích chọn ô vuông (checkbox) của dự án đó.",
+            "Chưa chọn dự án", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void BtnCloneRow_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is ProjectEntry entry)
+        {
+            CloneProject(entry);
+        }
+    }
+
+    private void CloneProject(ProjectEntry sourceEntry)
+    {
+        if (sourceEntry == null) return;
+
+        // Sinh tên clone duy nhất, ví dụ: "UTSUGI - Copy", "UTSUGI - Copy (2)"
+        string cloneName = ProjectManagerService.GenerateUniqueCloneName(
+            sourceEntry.ProjectName,
+            _allEntries.Select(x => x.ProjectName));
+
+        // Tính STT kế tiếp nếu STT hiện tại là số
+        int maxNo = 0;
+        foreach (var p in _allEntries)
+        {
+            if (int.TryParse(p.No, out int n) && n > maxNo)
+            {
+                maxNo = n;
+            }
+        }
+        string suggestedNo = maxNo > 0 ? (maxNo + 1).ToString() : sourceEntry.No;
+
+        // Chuẩn bị bản sao dự án mới
+        var cloneTemplate = ProjectManagerService.CreateClone(sourceEntry, cloneName, suggestedNo);
+
+        var parent = Window.GetWindow(this);
+        var dialog = new EditProjectDialog(cloneTemplate, isClone: true, originalProjectName: sourceEntry.ProjectName)
+        {
+            Owner = parent
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            var newEntry = dialog.Entry;
+            _allEntries.Add(newEntry);
+            _displayEntries.Add(newEntry);
+            _projectService.SaveAll(_allEntries);
+            _collectionView?.Refresh();
+            UpdateSummary();
+            UpdateSelectAllState();
+
+            // Chọn và cuộn tới dòng vừa clone
+            GridProjects.SelectedItem = newEntry;
+            GridProjects.ScrollIntoView(newEntry);
+        }
+    }
+
+    private void GridProjects_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.D && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            e.Handled = true;
+            BtnCloneProject_Click(sender, e);
+        }
+    }
+
+    private void DataGridRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is DataGridRow row)
+        {
+            row.IsSelected = true;
+            row.Focus();
+        }
+    }
+
+    private ProjectEntry? GetEntryFromMenuItem(object sender)
+    {
+        if (sender is MenuItem mi)
+        {
+            if (mi.DataContext is ProjectEntry pe) return pe;
+            if (mi.Parent is ContextMenu cm && cm.PlacementTarget is FrameworkElement fe && fe.DataContext is ProjectEntry fePe)
+            {
+                return fePe;
+            }
+        }
+        return GridProjects.SelectedItem as ProjectEntry;
+    }
+
+    private void MenuItemClone_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetEntryFromMenuItem(sender);
+        if (entry != null)
+        {
+            CloneProject(entry);
+        }
+    }
+
+    private void MenuItemEdit_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetEntryFromMenuItem(sender);
+        if (entry != null)
+        {
+            OpenEditDialog(entry);
+        }
+    }
+
+    private void MenuItemOpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetEntryFromMenuItem(sender);
+        if (entry != null && !string.IsNullOrWhiteSpace(entry.SourceFolder))
+        {
+            OpenFolderInternal(entry.SourceFolder);
+        }
+    }
+
+    private void MenuItemCopyFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetEntryFromMenuItem(sender);
+        if (entry != null && !string.IsNullOrWhiteSpace(entry.SourceFolder))
+        {
+            try
+            {
+                Clipboard.SetText(entry.SourceFolder);
+            }
+            catch { }
+        }
+    }
+
+    private void MenuItemDeleteRow_Click(object sender, RoutedEventArgs e)
+    {
+        var entry = GetEntryFromMenuItem(sender);
+        if (entry != null)
+        {
+            var res = MessageBox.Show(Window.GetWindow(this),
+                $"Bạn có chắc chắn muốn xóa dòng dự án '{entry.ProjectName}' ra khỏi bảng không?\n\n(Lưu ý: Dữ liệu trên máy chủ và thư mục sẽ không bị ảnh hưởng)",
+                "Xác nhận xóa dòng", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (res == MessageBoxResult.Yes)
+            {
+                _allEntries.Remove(entry);
+                _displayEntries.Remove(entry);
+                _projectService.SaveAll(_allEntries);
+                _collectionView?.Refresh();
+                UpdateSummary();
+                UpdateSelectAllState();
+            }
         }
     }
 
@@ -945,21 +1122,27 @@ public partial class ProjectManagerView : UserControl
     {
         if (sender is Button btn && btn.DataContext is ProjectEntry p && !string.IsNullOrEmpty(p.SourceFolder))
         {
-            try
+            OpenFolderInternal(p.SourceFolder);
+        }
+    }
+
+    private void OpenFolderInternal(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath)) return;
+        try
+        {
+            if (Directory.Exists(folderPath))
             {
-                if (Directory.Exists(p.SourceFolder))
-                {
-                    Process.Start("explorer.exe", p.SourceFolder);
-                }
-                else
-                {
-                    MessageBox.Show(Window.GetWindow(this), $"Thư mục không tồn tại hoặc không thể kết nối tới ổ mạng:\n{p.SourceFolder}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+                Process.Start("explorer.exe", folderPath);
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show(Window.GetWindow(this), $"Không thể mở thư mục: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Window.GetWindow(this), $"Thư mục không tồn tại hoặc không thể kết nối tới ổ mạng:\n{folderPath}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(Window.GetWindow(this), $"Không thể mở thư mục: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

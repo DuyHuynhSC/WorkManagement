@@ -203,6 +203,25 @@ public class ProjectEntry : INotifyPropertyChanged
         };
     }
 
+    /// <summary>
+    /// Tạo một bản sao dự án mới với ID duy nhất và trạng thái chưa chọn
+    /// </summary>
+    public ProjectEntry CloneAsNew(string? newName = null, string? newNo = null)
+    {
+        var copy = Clone();
+        copy.Id = Guid.NewGuid().ToString();
+        copy.IsSelected = false;
+        if (!string.IsNullOrWhiteSpace(newName))
+        {
+            copy.ProjectName = newName.Trim();
+        }
+        if (newNo != null)
+        {
+            copy.No = newNo.Trim();
+        }
+        return copy;
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)

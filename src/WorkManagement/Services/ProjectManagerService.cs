@@ -148,4 +148,39 @@ public class ProjectManagerService
         }
         catch { }
     }
+
+    /// <summary>
+    /// Sinh tên dự án mới dạng [Tên gốc] - Copy, tự động tăng số nếu tên đã tồn tại
+    /// </summary>
+    public static string GenerateUniqueCloneName(string originalName, IEnumerable<string?> existingNames)
+    {
+        string baseName = (originalName ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(baseName)) baseName = "Project";
+
+        string candidate = $"{baseName} - Copy";
+        var existingSet = new HashSet<string>(
+            existingNames.Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n!.Trim()),
+            StringComparer.OrdinalIgnoreCase);
+
+        if (!existingSet.Contains(candidate))
+        {
+            return candidate;
+        }
+
+        int counter = 2;
+        while (existingSet.Contains($"{baseName} - Copy ({counter})"))
+        {
+            counter++;
+        }
+        return $"{baseName} - Copy ({counter})";
+    }
+
+    /// <summary>
+    /// Tạo một bản sao dự án mới với ID duy nhất và trạng thái chưa chọn
+    /// </summary>
+    public static ProjectEntry CreateClone(ProjectEntry source, string? newProjectName = null, string? newNo = null)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return source.CloneAsNew(newProjectName, newNo);
+    }
 }

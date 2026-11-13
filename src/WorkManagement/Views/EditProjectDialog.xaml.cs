@@ -17,7 +17,7 @@ public partial class EditProjectDialog : Window
     private readonly List<VirtualMachineEntry> _availableVms = new();
     private bool _isPasswordRevealed;
 
-    public EditProjectDialog(ProjectEntry? entryToEdit = null)
+    public EditProjectDialog(ProjectEntry? entryToEdit = null, bool isClone = false, string? originalProjectName = null)
     {
         InitializeComponent();
 
@@ -32,8 +32,22 @@ public partial class EditProjectDialog : Window
         if (entryToEdit != null)
         {
             Entry = entryToEdit.Clone();
-            TxtDialogTitle.Text = $"Chỉnh Sửa Dự Án: {Entry.ProjectName}";
-            Title = $"Chỉnh Sửa Dự Án - {Entry.ProjectName}";
+            if (isClone)
+            {
+                Entry.Id = Guid.NewGuid().ToString();
+                Entry.IsSelected = false;
+                string srcName = !string.IsNullOrWhiteSpace(originalProjectName) ? originalProjectName : entryToEdit.ProjectName;
+                TxtDialogTitle.Text = $"Nhân Bản (Clone) Dự Án: {srcName}";
+                TxtDialogSubtitle.Text = "Khai báo thông tin dự án mới được nhân bản từ cấu hình dự án gốc";
+                Title = $"Nhân Bản Dự Án - {srcName}";
+                IconDialogHeader.Kind = PackIconKind.ContentDuplicate;
+                TxtBtnSave.Text = "Lưu Dự Án Clone";
+            }
+            else
+            {
+                TxtDialogTitle.Text = $"Chỉnh Sửa Dự Án: {Entry.ProjectName}";
+                Title = $"Chỉnh Sửa Dự Án - {Entry.ProjectName}";
+            }
         }
         else
         {
@@ -43,6 +57,15 @@ public partial class EditProjectDialog : Window
         }
 
         PopulateForm();
+
+        if (isClone)
+        {
+            Loaded += (s, e) =>
+            {
+                TxtProjectName.Focus();
+                TxtProjectName.SelectAll();
+            };
+        }
     }
 
     private void PopulateForm()
