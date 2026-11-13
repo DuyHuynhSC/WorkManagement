@@ -94,7 +94,14 @@ public partial class MainWindow : Window
         AiConfigViewControl.Initialize(_configService, _logger);
         AiConfigViewControl.SettingsSaved += (_, _) => { _currentSettings = _configService.Load(); };
 
+        BackupFolderConfigViewControl.Initialize(_configService, _logger);
+        BackupFolderConfigViewControl.SettingsSaved += BackupFolderConfigViewControl_SettingsSaved;
+
         DashboardViewControl.OpenCommandPaletteRequested += (_, _) => OpenCommandPalette();
+        DashboardViewControl.OpenBackupFolderSettingsRequested += (_, _) => SwitchToView(AppNavView.BackupFolderConfig);
+
+        var initialFolders = _configService.GetBackupFolderSettings(_currentSettings);
+        _logger.SetLogDirectory(initialFolders.LogFolderPath);
 
         _systemTrayService = new SystemTrayService(
             this,
@@ -200,6 +207,15 @@ public partial class MainWindow : Window
     {
         _configService.Save(_currentSettings);
         _logger.Info($"Đã lưu cấu hình Email chung cho tất cả Profile (SMTP: {_currentSettings.SmtpHost}:{_currentSettings.SmtpPort}, Số email nhận: {_currentSettings.RecipientEmails.Count}).");
+    }
+
+    private void BackupFolderConfigViewControl_SettingsSaved(object? sender, EventArgs e)
+    {
+        _currentSettings = _configService.Load();
+        var folderSettings = _configService.GetBackupFolderSettings(_currentSettings);
+        _logger.SetLogDirectory(folderSettings.LogFolderPath);
+        DashboardViewControl.LoadDashboard();
+        _logger.Info($"Đã cập nhật cấu hình thư mục sao lưu và nhật ký vào hệ thống.");
     }
 
     public void SetDarkTheme(bool isDark) =>
@@ -516,6 +532,11 @@ public partial class MainWindow : Window
     private void BtnAiSettings_Click(object sender, RoutedEventArgs e)
     {
         SwitchToView(AppNavView.AiConfig);
+    }
+
+    private void BtnBackupFolderSettings_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchToView(AppNavView.BackupFolderConfig);
     }
 
     private async void BtnSendPreviewEmail_Click(object sender, RoutedEventArgs e)
@@ -1319,7 +1340,8 @@ public partial class MainWindow : Window
         TaskScheduler,
         FtpConfig,
         EmailConfig,
-        AiConfig
+        AiConfig,
+        BackupFolderConfig
     }
 
     private void NavBtnDashboard_Click(object sender, RoutedEventArgs e)
@@ -1359,6 +1381,8 @@ public partial class MainWindow : Window
         ViewContainerEmailConfig.Visibility = targetView == AppNavView.EmailConfig ? Visibility.Visible : Visibility.Collapsed;
         if (ViewContainerAiConfig != null)
             ViewContainerAiConfig.Visibility = targetView == AppNavView.AiConfig ? Visibility.Visible : Visibility.Collapsed;
+        if (ViewContainerBackupFolderConfig != null)
+            ViewContainerBackupFolderConfig.Visibility = targetView == AppNavView.BackupFolderConfig ? Visibility.Visible : Visibility.Collapsed;
 
         if (NavBtnDashboard != null)
             NavBtnDashboard.Style = (Style)FindResource(targetView == AppNavView.Dashboard ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
@@ -1370,6 +1394,8 @@ public partial class MainWindow : Window
         BtnEmailSettings.Style = (Style)FindResource(targetView == AppNavView.EmailConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         if (BtnAiSettings != null)
             BtnAiSettings.Style = (Style)FindResource(targetView == AppNavView.AiConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
+        if (BtnBackupFolderSettings != null)
+            BtnBackupFolderSettings.Style = (Style)FindResource(targetView == AppNavView.BackupFolderConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
 
         switch (targetView)
         {
@@ -1428,6 +1454,13 @@ public partial class MainWindow : Window
                 IconCurrentPage.Kind = MaterialDesignThemes.Wpf.PackIconKind.RobotOutline;
                 _currentSettings = _configService.Load();
                 AiConfigViewControl?.LoadSettingsToUi(_currentSettings.Ai ?? new AiSettings());
+                break;
+
+            case AppNavView.BackupFolderConfig:
+                TxtCurrentPageTitle.Text = "Cấu Hình Thư Mục Sao Lưu & Nhật Ký";
+                TxtCurrentPageSub.Text = "Thiết lập thống nhất đường dẫn thư mục log, backup mã nguồn dự án và backup khi xóa FTP";
+                IconCurrentPage.Kind = MaterialDesignThemes.Wpf.PackIconKind.FolderCogOutline;
+                BackupFolderConfigViewControl?.LoadSettings();
                 break;
         }
     }
@@ -1682,6 +1715,15 @@ public partial class MainWindow : Window
                 IconKind = PackIconKind.RobotOutline,
                 SearchKeywords = "ai model openai llm ollama vllm endpoint",
                 ExecuteAction = () => NavigateAndRestore(AppNavView.AiConfig)
+            },
+            new()
+            {
+                Title = "Cấu Hình Thư Mục Sao Lưu & Nhật Ký (Backup & Log Folders)",
+                Subtitle = "Thiết lập đường dẫn thư mục lưu log, backup mã nguồn dự án và backup khi xóa FTP",
+                CategoryBadge = "CẤU HÌNH",
+                IconKind = PackIconKind.FolderCogOutline,
+                SearchKeywords = "backup folder thu muc log nhat ky source ftp du an sao luu",
+                ExecuteAction = () => NavigateAndRestore(AppNavView.BackupFolderConfig)
             },
             new()
             {

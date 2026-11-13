@@ -100,7 +100,6 @@ public partial class ConnectionSettingsView : UserControl
         TxtIncludeExtensions.Text = s.IncludeExtensions ?? string.Empty;
         TxtMinFileSizeMb.Text = s.MinFileSizeMb > 0 ? s.MinFileSizeMb.ToString("0.##") : "0";
         ChkEnableBackup.IsChecked = s.EnableBackup;
-        TxtLocalBackupPath.Text = s.LocalBackupPath;
     }
 
     public FtpSettings ReadSettingsFromUi()
@@ -149,7 +148,7 @@ public partial class ConnectionSettingsView : UserControl
             IncludeExtensions = TxtIncludeExtensions.Text.Trim(),
             MinFileSizeMb = minSizeMb,
             EnableBackup = ChkEnableBackup.IsChecked == true,
-            LocalBackupPath = TxtLocalBackupPath.Text.Trim(),
+            LocalBackupPath = _settings.LocalBackupPath,
             IsDarkTheme = _settings.IsDarkTheme,
             SmtpHost = _settings.SmtpHost,
             SmtpPort = _settings.SmtpPort,
@@ -318,19 +317,6 @@ public partial class ConnectionSettingsView : UserControl
         {
             TxtRemotePaths.Text = string.Join(";", picker.SelectedPaths);
             _logger?.Info($"Đã chọn Remote Paths: {TxtRemotePaths.Text}");
-        }
-    }
-
-    private void BtnBrowseLocalBackup_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFolderDialog
-        {
-            Title = "Chọn thư mục lưu file Backup trên máy tính"
-        };
-
-        if (dialog.ShowDialog(Window.GetWindow(this)) == true)
-        {
-            TxtLocalBackupPath.Text = dialog.FolderName;
         }
     }
 

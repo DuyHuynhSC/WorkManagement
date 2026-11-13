@@ -217,11 +217,18 @@
                                     <TextBlock Text="Mở Project Backups" FontSize="11.5" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="28" Padding="10,0" Margin="0,0,0,6"
+                            <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="28" Padding="10,0" Margin="0,0,6,6"
                                     Click="BtnOpenLogsFolder_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="FileDocumentOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                     <TextBlock Text="Mở Thư Mục Logs" FontSize="11.5" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnConfigureBackupFolders" Style="{StaticResource AppOutlinedButtonStyle}" Height="28" Padding="10,0" Margin="0,0,0,6"
+                                    Click="BtnConfigureBackupFolders_Click" ToolTip="Thiết lập các thư mục sao lưu và nhật ký">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="FolderCogOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Cài Đặt Thư Mục..." FontSize="11.5" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </WrapPanel>

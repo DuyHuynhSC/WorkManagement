@@ -205,7 +205,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <materialDesign:PackIcon Kind="FolderSyncOutline" Width="20" Height="20" VerticalAlignment="Center"
                                                  Foreground="{DynamicResource AppSectionIconBrush}" Margin="0,0,8,0"/>
-                        <TextBlock Text="3. Thư mục FTP &amp; Vị trí Sao lưu Local (Backup)" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="3. Thư mục FTP &amp; Bộ Lọc Quét Nâng Cao" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Remote Paths -->
@@ -278,34 +278,13 @@
 
                     <Separator Opacity="0.2" Margin="0,0,0,10"/>
 
-                    <!-- Local Backup Path -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <CheckBox x:Name="ChkEnableBackup" Grid.Column="0" Content="Sao lưu trước xóa"
+                    <!-- Backup Option Info -->
+                    <DockPanel Margin="0,4,0,0">
+                        <CheckBox x:Name="ChkEnableBackup" Content="Tự động sao lưu file về máy tính trước khi xóa khỏi FTP"
                                   VerticalAlignment="Center" FontWeight="SemiBold"/>
-
-                        <DockPanel Grid.Column="1" VerticalAlignment="Center"
-                                   IsEnabled="{Binding ElementName=ChkEnableBackup, Path=IsChecked}">
-                            <Button x:Name="BtnBrowseLocalBackup" DockPanel.Dock="Right"
-                                    Style="{StaticResource AppOutlinedButtonStyle}"
-                                    Height="32" Padding="12,0" Margin="8,0,0,0"
-                                    Click="BtnBrowseLocalBackup_Click"
-                                    ToolTip="Chọn thư mục lưu trữ file backup trên máy tính cá nhân">
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Chọn Local..." VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </Button>
-                            <TextBox x:Name="TxtLocalBackupPath"
-                                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                                     materialDesign:HintAssist.Hint="Đường dẫn thư mục lưu bản sao lưu trên máy tính"
-                                     ToolTip="Thư mục sao lưu file trước khi thực hiện xóa khỏi FTP"/>
-                        </DockPanel>
-                    </Grid>
+                        <TextBlock Text="(Thư mục sao lưu được quản lý tập trung tại mục 'Cấu Hình Thư Mục')"
+                                   FontSize="11.5" Opacity="0.75" FontStyle="Italic" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </DockPanel>
                 </StackPanel>
             </materialDesign:Card>
 

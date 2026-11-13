@@ -118,7 +118,7 @@
                         <Button x:Name="BtnOpenConnectionSettings" Style="{StaticResource AppNavButtonInactiveStyle}"
                                 Height="40" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
                                 Click="BtnOpenConnectionSettings_Click"
-                                ToolTip="Cấu hình Kết nối FTP, Proxy &amp; Thư mục sao lưu">
+                                ToolTip="Cấu hình Kết nối FTP, Proxy &amp; Bộ lọc quét">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="TuneVariant" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Text="Cấu Hình FTP" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -144,6 +144,17 @@
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="RobotOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Text="Cấu Hình AI" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- CONFIG BACKUP & LOG FOLDERS BUTTON -->
+                        <Button x:Name="BtnBackupFolderSettings" Style="{StaticResource AppNavButtonInactiveStyle}"
+                                Height="40" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
+                                Click="BtnBackupFolderSettings_Click"
+                                ToolTip="Cấu hình thư mục sao lưu FTP, sao lưu mã nguồn dự án và nhật ký (Logs)">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderCogOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="Cấu Hình Thư Mục" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -733,6 +744,11 @@
                 <!-- VIEW 7: AI MODEL CONFIG -->
                 <Grid x:Name="ViewContainerAiConfig" Visibility="Collapsed">
                     <views:AiSettingsView x:Name="AiConfigViewControl"/>
+                </Grid>
+
+                <!-- VIEW 8: BACKUP & LOG FOLDER CONFIG -->
+                <Grid x:Name="ViewContainerBackupFolderConfig" Visibility="Collapsed">
+                    <views:BackupFolderSettingsView x:Name="BackupFolderConfigViewControl"/>
                 </Grid>
             </Grid>
         </Grid>

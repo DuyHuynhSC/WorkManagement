@@ -62,6 +62,7 @@ public class ConfigService
 
         UpsertProfile(settings, settings.SelectedProfileName);
         SyncEmailSettingsAcrossAllProfiles(settings);
+        SyncFolderSettingsAcrossAllProfiles(settings);
         NormalizeThemeSettings(settings);
 
         // Tạo bản sao để mã hóa toàn bộ mật khẩu khi lưu xuống đĩa mà không làm ảnh hưởng tới đối tượng đang chạy trên RAM
@@ -150,6 +151,8 @@ public class ConfigService
             MinFileSizeMb = source.MinFileSizeMb,
             EnableBackup = source.EnableBackup,
             LocalBackupPath = source.LocalBackupPath,
+            ProjectBackupPath = source.ProjectBackupPath,
+            LogFolderPath = source.LogFolderPath,
             IsDarkTheme = source.IsDarkTheme,
             ThemeName = source.ThemeName,
             MinimizeToTrayOnClose = source.MinimizeToTrayOnClose,
@@ -274,6 +277,7 @@ public class ConfigService
         }
 
         SyncEmailSettingsAcrossAllProfiles(settings);
+        SyncFolderSettingsAcrossAllProfiles(settings);
     }
 
     public static void SyncEmailSettingsAcrossAllProfiles(FtpSettings settings)
@@ -283,6 +287,69 @@ public class ConfigService
         {
             profile.SyncEmailSettings(settings);
         }
+    }
+
+    public static void SyncFolderSettingsAcrossAllProfiles(FtpSettings settings)
+    {
+        if (settings.Profiles == null) return;
+        foreach (var profile in settings.Profiles)
+        {
+            profile.LocalBackupPath = settings.LocalBackupPath;
+        }
+    }
+
+    public BackupFolderSettings GetBackupFolderSettings(FtpSettings? settings = null)
+    {
+        settings ??= Load();
+        var projService = new ProjectManagerService();
+        var projSettings = projService.LoadSettings();
+
+        string projPath = !string.IsNullOrWhiteSpace(settings.ProjectBackupPath)
+            ? settings.ProjectBackupPath
+            : (!string.IsNullOrWhiteSpace(projSettings.BackupRootDirectory)
+                ? projSettings.BackupRootDirectory
+                : BackupFolderSettings.DefaultProjectBackupPath);
+
+        string logPath = !string.IsNullOrWhiteSpace(settings.LogFolderPath)
+            ? settings.LogFolderPath
+            : BackupFolderSettings.DefaultLogFolderPath;
+
+        string ftpPath = !string.IsNullOrWhiteSpace(settings.LocalBackupPath)
+            ? settings.LocalBackupPath
+            : BackupFolderSettings.DefaultFtpBackupPath;
+
+        return new BackupFolderSettings
+        {
+            LogFolderPath = logPath,
+            ProjectBackupPath = projPath,
+            FtpBackupPath = ftpPath
+        };
+    }
+
+    public void SaveBackupFolderSettings(BackupFolderSettings folderSettings, FtpSettings? currentSettings = null)
+    {
+        var settings = currentSettings ?? Load();
+        settings.LogFolderPath = string.IsNullOrWhiteSpace(folderSettings.LogFolderPath)
+            ? BackupFolderSettings.DefaultLogFolderPath
+            : folderSettings.LogFolderPath.Trim();
+        settings.ProjectBackupPath = string.IsNullOrWhiteSpace(folderSettings.ProjectBackupPath)
+            ? BackupFolderSettings.DefaultProjectBackupPath
+            : folderSettings.ProjectBackupPath.Trim();
+        settings.LocalBackupPath = string.IsNullOrWhiteSpace(folderSettings.FtpBackupPath)
+            ? BackupFolderSettings.DefaultFtpBackupPath
+            : folderSettings.FtpBackupPath.Trim();
+
+        SyncFolderSettingsAcrossAllProfiles(settings);
+        Save(settings);
+
+        try
+        {
+            var projService = new ProjectManagerService();
+            var projSettings = projService.LoadSettings();
+            projSettings.BackupRootDirectory = settings.ProjectBackupPath;
+            projService.SaveSettings(projSettings);
+        }
+        catch { }
     }
 
     public FtpSiteProfile UpsertProfile(FtpSettings settings, string profileName)

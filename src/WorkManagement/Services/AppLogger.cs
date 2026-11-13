@@ -5,16 +5,35 @@ namespace WorkManagement.Services;
 
 public class AppLogger
 {
-    private readonly string _logDir;
+    private string _logDir;
+    public string LogDirectory => _logDir;
     public event Action<string>? OnLogMessage;
 
     public AppLogger(string? logDir = null)
     {
-        _logDir = logDir ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-        if (!Directory.Exists(_logDir))
+        _logDir = !string.IsNullOrWhiteSpace(logDir)
+            ? logDir
+            : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+        EnsureDirectory();
+    }
+
+    public void SetLogDirectory(string? logDir)
+    {
+        if (string.IsNullOrWhiteSpace(logDir)) return;
+        _logDir = logDir;
+        EnsureDirectory();
+    }
+
+    private void EnsureDirectory()
+    {
+        try
         {
-            Directory.CreateDirectory(_logDir);
+            if (!Directory.Exists(_logDir))
+            {
+                Directory.CreateDirectory(_logDir);
+            }
         }
+        catch { }
     }
 
     public void Info(string message) => Write("INFO", message);

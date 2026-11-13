@@ -129,9 +129,10 @@ public partial class DashboardView : UserControl
             TxtKpiSecuritySub.Text = "Bảo vệ mật khẩu chuẩn DPAPI";
 
             // 4. Local Backup & Log Storage KPI
-            string ftpBackupDir = ftpSettings.LocalBackupPath;
-            string projBackupDir = projCleanupSettings.BackupRootDirectory;
-            string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+            var folderSettings = _configService.GetBackupFolderSettings(ftpSettings);
+            string ftpBackupDir = folderSettings.FtpBackupPath;
+            string projBackupDir = folderSettings.ProjectBackupPath;
+            string logDir = folderSettings.LogFolderPath;
 
             var (ftpSize, ftpFiles) = GetDirectoryStats(ftpBackupDir);
             var (projSize, projFiles) = GetDirectoryStats(projBackupDir);
@@ -144,8 +145,13 @@ public partial class DashboardView : UserControl
             TxtKpiBackupSub.Text = $"{totalFiles:N0} tập tin lưu trữ cục bộ";
 
             TxtFtpBackupFolderInfo.Text = $"{FileManagerEntry.FormatFileSize(ftpSize)} ({ftpFiles} file)";
+            TxtFtpBackupFolderInfo.ToolTip = ftpBackupDir;
+
             TxtProjBackupFolderInfo.Text = $"{FileManagerEntry.FormatFileSize(projSize)} ({projFiles} file)";
+            TxtProjBackupFolderInfo.ToolTip = projBackupDir;
+
             TxtLogFolderInfo.Text = $"{FileManagerEntry.FormatFileSize(logSize)} ({logFiles} file)";
+            TxtLogFolderInfo.ToolTip = logDir;
 
             LoadAuditLogFiles(logDir);
             TxtLastRefreshed.Text = $"Cập nhật lúc: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
@@ -280,7 +286,8 @@ public partial class DashboardView : UserControl
     {
         if (CboLogFiles.SelectedItem is not string fileName) return;
 
-        string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs", fileName);
+        var folderSettings = _configService.GetBackupFolderSettings();
+        string logPath = Path.Combine(folderSettings.LogFolderPath, fileName);
         if (!File.Exists(logPath)) return;
 
         try
@@ -327,13 +334,11 @@ public partial class DashboardView : UserControl
         if (confirm != MessageBoxResult.Yes) return;
 
         DateTime cutoff = DateTime.Now.AddDays(-keepDays);
-        var ftpSettings = _configService.Load();
-        var projSettings = _projectService.LoadSettings();
-        string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+        var folderSettings = _configService.GetBackupFolderSettings();
 
-        var (del1, bytes1) = CleanDirectoryOlderThan(ftpSettings.LocalBackupPath, cutoff);
-        var (del2, bytes2) = CleanDirectoryOlderThan(projSettings.BackupRootDirectory, cutoff);
-        var (del3, bytes3) = CleanDirectoryOlderThan(logDir, cutoff);
+        var (del1, bytes1) = CleanDirectoryOlderThan(folderSettings.FtpBackupPath, cutoff);
+        var (del2, bytes2) = CleanDirectoryOlderThan(folderSettings.ProjectBackupPath, cutoff);
+        var (del3, bytes3) = CleanDirectoryOlderThan(folderSettings.LogFolderPath, cutoff);
 
         int totalDeleted = del1 + del2 + del3;
         long totalFreed = bytes1 + bytes2 + bytes3;
@@ -395,22 +400,41 @@ public partial class DashboardView : UserControl
         return (deleted, freed);
     }
 
+    public event EventHandler? OpenBackupFolderSettingsRequested;
+
     private void BtnOpenFtpBackupFolder_Click(object sender, RoutedEventArgs e)
     {
-        var ftpSettings = _configService.Load();
-        OpenLocalDirectory(ftpSettings.LocalBackupPath);
+        var folderSettings = _configService.GetBackupFolderSettings();
+        OpenLocalDirectory(folderSettings.FtpBackupPath);
     }
 
     private void BtnOpenProjectBackupFolder_Click(object sender, RoutedEventArgs e)
     {
-        var projSettings = _projectService.LoadSettings();
-        OpenLocalDirectory(projSettings.BackupRootDirectory);
+        var folderSettings = _configService.GetBackupFolderSettings();
+        OpenLocalDirectory(folderSettings.ProjectBackupPath);
     }
 
     private void BtnOpenLogsFolder_Click(object sender, RoutedEventArgs e)
     {
-        string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-        OpenLocalDirectory(logDir);
+        var folderSettings = _configService.GetBackupFolderSettings();
+        OpenLocalDirectory(folderSettings.LogFolderPath);
+    }
+
+    private void BtnConfigureBackupFolders_Click(object sender, RoutedEventArgs e)
+    {
+        if (OpenBackupFolderSettingsRequested != null)
+        {
+            OpenBackupFolderSettingsRequested.Invoke(this, EventArgs.Empty);
+        }
+        else
+        {
+            var dialog = new BackupFolderSettingsWindow(_configService);
+            dialog.Owner = Window.GetWindow(this);
+            if (dialog.ShowDialog() == true)
+            {
+                LoadDashboard();
+            }
+        }
     }
 
     private void OpenLocalDirectory(string? dirPath)

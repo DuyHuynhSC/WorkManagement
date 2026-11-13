@@ -1,0 +1,214 @@
+<UserControl x:Class="WorkManagement.Views.BackupFolderSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="1050">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14,10,14,14">
+        <StackPanel MaxWidth="1050" HorizontalAlignment="Stretch">
+
+            <!-- HEADER BANNER -->
+            <Border Margin="0,0,0,14" Padding="16,12" Style="{StaticResource AppHeaderBannerStyle}" CornerRadius="6">
+                <DockPanel LastChildFill="True">
+                    <materialDesign:PackIcon Kind="FolderCogOutline" Width="32" Height="32" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="CẤU HÌNH THƯ MỤC SAO LƯU &amp; NHẬT KÝ (BACKUP &amp; LOG STORAGE)" FontSize="16" FontWeight="Bold"/>
+                        <TextBlock Text="Thiết lập tập trung đường dẫn lưu trữ các bản sao lưu FTP, mã nguồn dự án và nhật ký hệ thống"
+                                   FontSize="11.5" Opacity="0.9"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- CARD 1: FTP DELETE BACKUP FOLDER -->
+            <materialDesign:Card Margin="0,0,0,12" Padding="16,14"
+                                 Background="{DynamicResource AppCardBackgroundBrush}"
+                                 BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <materialDesign:PackIcon Kind="FolderSyncOutline" Width="20" Height="20" VerticalAlignment="Center"
+                                                 Foreground="{DynamicResource AppSectionIconBrush}" Margin="0,0,8,0"/>
+                        <TextBlock Text="1. Thư Mục Sao Lưu Khi Xóa FTP (FTP Delete Backup Folder)" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="Nơi tự động tải về và lưu giữ các tập tin từ máy chủ FTP trước khi tiến hành xóa (theo chế độ sao lưu trước khi xóa)."
+                               FontSize="12" Opacity="0.8" Margin="0,0,0,12"/>
+
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="TxtFtpBackupPath" Grid.Column="0" Margin="0,0,10,0"
+                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                 materialDesign:HintAssist.Hint="Đường dẫn thư mục sao lưu file FTP (VD: D:\WorkManagement\Backups)"
+                                 ToolTip="Thư mục sao lưu file trước khi thực hiện xóa khỏi FTP"
+                                 FontSize="12.5" VerticalContentAlignment="Center"/>
+
+                        <Button x:Name="BtnBrowseFtpBackup" Grid.Column="1"
+                                Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="34" Padding="12,0" Margin="0,0,8,0"
+                                Click="BtnBrowseFtpBackup_Click"
+                                ToolTip="Duyệt và chọn thư mục trên máy tính">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Chọn Thư Mục..." VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="BtnOpenFtpBackup" Grid.Column="2"
+                                Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="34" Padding="12,0"
+                                Click="BtnOpenFtpBackup_Click"
+                                ToolTip="Mở thư mục này trong Windows Explorer">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Mở Folder" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock x:Name="TxtFtpDefaultHint" Text="Mặc định: [Thư mục ứng dụng]\Backups" FontSize="11" Opacity="0.65" FontStyle="Italic"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- CARD 2: PROJECT SOURCE BACKUP FOLDER -->
+            <materialDesign:Card Margin="0,0,0,12" Padding="16,14"
+                                 Background="{DynamicResource AppCardBackgroundBrush}"
+                                 BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <materialDesign:PackIcon Kind="FolderZipOutline" Width="20" Height="20" VerticalAlignment="Center"
+                                                 Foreground="{DynamicResource AppSectionIconBrush}" Margin="0,0,8,0"/>
+                        <TextBlock Text="2. Thư Mục Sao Lưu Mã Nguồn Dự Án (Project Source Backup Folder)" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="Nơi lưu trữ bản sao chép mã nguồn thư mục Q:\ trước khi thực hiện dọn dẹp hoặc xóa dự án."
+                               FontSize="12" Opacity="0.8" Margin="0,0,0,12"/>
+
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="TxtProjectBackupPath" Grid.Column="0" Margin="0,0,10,0"
+                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                 materialDesign:HintAssist.Hint="Đường dẫn thư mục sao lưu mã nguồn dự án (VD: D:\WorkManagement_Backups)"
+                                 ToolTip="Thư mục sao lưu mã nguồn Q:\ khi dọn dẹp hoặc xóa dự án"
+                                 FontSize="12.5" VerticalContentAlignment="Center"/>
+
+                        <Button x:Name="BtnBrowseProjectBackup" Grid.Column="1"
+                                Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="34" Padding="12,0" Margin="0,0,8,0"
+                                Click="BtnBrowseProjectBackup_Click"
+                                ToolTip="Duyệt và chọn thư mục trên máy tính">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Chọn Thư Mục..." VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="BtnOpenProjectBackup" Grid.Column="2"
+                                Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="34" Padding="12,0"
+                                Click="BtnOpenProjectBackup_Click"
+                                ToolTip="Mở thư mục này trong Windows Explorer">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Mở Folder" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock x:Name="TxtProjectDefaultHint" Text="Mặc định: Documents\WorkManagement_Backups" FontSize="11" Opacity="0.65" FontStyle="Italic"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- CARD 3: APPLICATION LOGS FOLDER -->
+            <materialDesign:Card Margin="0,0,0,14" Padding="16,14"
+                                 Background="{DynamicResource AppCardBackgroundBrush}"
+                                 BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <materialDesign:PackIcon Kind="FileDocumentOutline" Width="20" Height="20" VerticalAlignment="Center"
+                                                 Foreground="{DynamicResource AppSectionIconBrush}" Margin="0,0,8,0"/>
+                        <TextBlock Text="3. Thư Mục Nhật Ký Hoạt Động (Application Logs Folder)" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="Nơi lưu trữ các tệp nhật ký hàng ngày (WorkManagement_yyyyMMdd.log) phục vụ kiểm toán, hiển thị Audit Log và theo dõi vận hành."
+                               FontSize="12" Opacity="0.8" Margin="0,0,0,12"/>
+
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="TxtLogFolderPath" Grid.Column="0" Margin="0,0,10,0"
+                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                 materialDesign:HintAssist.Hint="Đường dẫn thư mục lưu file nhật ký (VD: D:\WorkManagement\logs)"
+                                 ToolTip="Thư mục ghi nhật ký (log) của hệ thống"
+                                 FontSize="12.5" VerticalContentAlignment="Center"/>
+
+                        <Button x:Name="BtnBrowseLogFolder" Grid.Column="1"
+                                Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="34" Padding="12,0" Margin="0,0,8,0"
+                                Click="BtnBrowseLogFolder_Click"
+                                ToolTip="Duyệt và chọn thư mục trên máy tính">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Chọn Thư Mục..." VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="BtnOpenLogFolder" Grid.Column="2"
+                                Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="34" Padding="12,0"
+                                Click="BtnOpenLogFolder_Click"
+                                ToolTip="Mở thư mục này trong Windows Explorer">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Mở Folder" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock x:Name="TxtLogDefaultHint" Text="Mặc định: [Thư mục ứng dụng]\logs" FontSize="11" Opacity="0.65" FontStyle="Italic"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- FOOTER ACTION BAR -->
+            <Border Style="{StaticResource AppDialogFooterBorderStyle}" Padding="16,12" CornerRadius="6">
+                <DockPanel LastChildFill="True">
+                    <Button x:Name="BtnResetDefaults" DockPanel.Dock="Left"
+                            Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="36" Padding="14,0" Click="BtnResetDefaults_Click"
+                            ToolTip="Khôi phục lại toàn bộ đường dẫn về giá trị mặc định ban đầu">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Restore" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Khôi Phục Mặc Định" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtStatusMessage" VerticalAlignment="Center" Margin="0,0,14,0"
+                                   FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AppPrimaryButtonBackground}" Visibility="Collapsed"/>
+
+                        <Button x:Name="BtnSave" Style="{StaticResource AppPrimaryButtonStyle}"
+                                Height="36" Padding="20,0" Click="BtnSave_Click"
+                                ToolTip="Lưu cấu hình thư mục sao lưu và nhật ký vào hệ thống">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ContentSaveCheck" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Lưu Cấu Hình Thư Mục" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
