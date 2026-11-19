@@ -24,6 +24,8 @@ public class ExpiringVmRow
 
 public class MissingSourceFolderRow
 {
+    public string ProjectId { get; set; } = string.Empty;
+    public ProjectEntry? Project { get; set; }
     public string No { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public string SourceFolder { get; set; } = string.Empty;
@@ -215,6 +217,8 @@ public partial class DashboardView : UserControl
                 {
                     result.Add(new MissingSourceFolderRow
                     {
+                        ProjectId = p.Id,
+                        Project = p,
                         No = p.No,
                         ProjectName = p.ProjectName,
                         SourceFolder = folder,
@@ -451,6 +455,68 @@ public partial class DashboardView : UserControl
         catch (Exception ex)
         {
             MessageBox.Show(Window.GetWindow(this), $"Không thể mở thư mục:\n{ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnViewProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is MissingSourceFolderRow row)
+        {
+            var allProjects = _projectService.LoadAll();
+            var project = row.Project ?? allProjects.FirstOrDefault(p => p.Id == row.ProjectId);
+            if (project == null)
+            {
+                MessageBox.Show(Window.GetWindow(this), "Không tìm thấy thông tin dự án.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var parent = Window.GetWindow(this);
+            var dialog = new EditProjectDialog(project) { Owner = parent };
+            if (dialog.ShowDialog() == true)
+            {
+                int idx = allProjects.FindIndex(p => p.Id == project.Id);
+                if (idx >= 0)
+                {
+                    allProjects[idx] = dialog.Entry;
+                }
+                else
+                {
+                    allProjects.Add(dialog.Entry);
+                }
+                _projectService.SaveAll(allProjects);
+                LoadDashboard();
+            }
+        }
+    }
+
+    private void BtnDeleteProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is MissingSourceFolderRow row)
+        {
+            var allProjects = _projectService.LoadAll();
+            var project = row.Project ?? allProjects.FirstOrDefault(p => p.Id == row.ProjectId);
+            if (project == null)
+            {
+                MessageBox.Show(Window.GetWindow(this), "Không tìm thấy thông tin dự án cần xóa.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var parent = Window.GetWindow(this);
+            var confirm = MessageBox.Show(parent,
+                $"Bạn có chắc chắn muốn tiến hành xóa dự án '{project.ProjectName}' (Mã: {project.No}) không?",
+                "Xác nhận xóa dự án",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            var dialog = new ProjectDeleteExecutionDialog(new List<ProjectEntry> { project }, _projectService) { Owner = parent };
+            if (dialog.ShowDialog() == true || dialog.HasDeletedProjects)
+            {
+                var remaining = allProjects.Where(p => p.Id != project.Id).ToList();
+                _projectService.SaveAll(remaining);
+                LoadDashboard();
+            }
         }
     }
 }

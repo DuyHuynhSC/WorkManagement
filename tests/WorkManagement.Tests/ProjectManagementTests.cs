@@ -519,12 +519,16 @@ public class ProjectManagementTests
         Assert.Equal("ProjMissing1", missing[0].ProjectName);
         Assert.Equal(@"Q:\MissingFolder1", missing[0].SourceFolder);
         Assert.Equal("Bob", missing[0].PersonInCharge);
+        Assert.Equal(projects[1].Id, missing[0].ProjectId);
+        Assert.Same(projects[1], missing[0].Project);
         Assert.False(string.IsNullOrEmpty(missing[0].StatusText));
 
         Assert.Equal("105", missing[1].No);
         Assert.Equal("ProjMissing2", missing[1].ProjectName);
         Assert.Equal(@"q:\missingfolder2\", missing[1].SourceFolder);
         Assert.Equal("Eve", missing[1].PersonInCharge);
+        Assert.Equal(projects[4].Id, missing[1].ProjectId);
+        Assert.Same(projects[4], missing[1].Project);
     }
 
     [Fact]

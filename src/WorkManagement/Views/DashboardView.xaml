@@ -263,6 +263,31 @@
                               BorderThickness="1" BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Mã DA" Binding="{Binding No}" Width="80" FontWeight="Bold"/>
+
+                            <!-- THAO TÁC (VIEW, DELETE) TRƯỚC TÊN DỰ ÁN -->
+                            <DataGridTemplateColumn Header="Thao Tác" Width="90" CanUserResize="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                                    Width="26" Height="26" Padding="0" Margin="0,0,4,0"
+                                                    ToolTip="Xem / Sửa chi tiết thông tin dự án"
+                                                    Click="BtnViewProject_Click">
+                                                <materialDesign:PackIcon Kind="EyeOutline" Width="16" Height="16"
+                                                                         Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                                            </Button>
+                                            <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                                    Width="26" Height="26" Padding="0"
+                                                    ToolTip="Xóa dự án"
+                                                    Click="BtnDeleteProject_Click">
+                                                <materialDesign:PackIcon Kind="DeleteForeverOutline" Width="16" Height="16"
+                                                                         Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
                             <DataGridTextColumn Header="Tên Dự Án" Binding="{Binding ProjectName}" Width="180" FontWeight="SemiBold"/>
                             <DataGridTextColumn Header="Thư Mục Nguồn (Source Folder)" Binding="{Binding SourceFolder}" Width="*"/>
                             <DataGridTextColumn Header="Người Phụ Trách" Binding="{Binding PersonInCharge}" Width="140"/>
