@@ -25,6 +25,7 @@ public class FtpSettings
     public bool EnableBackup { get; set; } = true;
     public string LocalBackupPath { get; set; } = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Backups");
     public string ProjectBackupPath { get; set; } = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments), "WorkManagement_Backups");
+    public string? LastDownloadDirectory { get; set; }
     public string LogFolderPath { get; set; } = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "logs");
     public bool IsDarkTheme { get; set; } = false;
     public string ThemeName { get; set; } = string.Empty;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -25,7 +25,9 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<FtpFileCandidate> _candidates = new();
     private readonly ObservableCollection<FileManagerEntry> _fmEntries = new();
     private readonly ObservableCollection<FileManagerEntry> _fmDisplayEntries = new();
-    private string _currentFmRemotePath = "/";
+    private string _currentFmRemotePath = "/";
+    private string? _lastDownloadedDirectory;
+    private string? _lastDownloadedPath;
     private bool _fmLoadedOnce;
     private FtpSettings _currentSettings = new();
     private bool _suppressProfileSelectionChanged;
@@ -70,6 +72,7 @@ public partial class MainWindow : Window
         };
 
         _currentSettings = _configService.Load();
+        _lastDownloadedDirectory = _currentSettings.LastDownloadDirectory;
         _selectedScanProfileNames.Clear();
         if (_currentSettings.SelectedScanProfileNames != null && _currentSettings.SelectedScanProfileNames.Count > 0)
         {
@@ -725,6 +728,7 @@ public partial class MainWindow : Window
         BtnFmUploadFile.IsEnabled = !isBusy;
         BtnFmUploadFolder.IsEnabled = !isBusy;
         BtnFmDownload.IsEnabled = !isBusy;
+        if (BtnFmReveal != null) BtnFmReveal.IsEnabled = !isBusy;
         BtnFmView.IsEnabled = !isBusy;
         BtnFmNewFolder.IsEnabled = !isBusy;
         BtnFmDelete.IsEnabled = !isBusy;
@@ -982,6 +986,10 @@ public partial class MainWindow : Window
         {
             Title = $"Chọn thư mục lưu {items.Count} mục tải về từ FTP"
         };
+        if (!string.IsNullOrWhiteSpace(_lastDownloadedDirectory) && Directory.Exists(_lastDownloadedDirectory))
+        {
+            dlg.InitialDirectory = _lastDownloadedDirectory;
+        }
 
         if (dlg.ShowDialog(this) != true) return;
         string targetDir = dlg.FolderName;
@@ -993,6 +1001,25 @@ public partial class MainWindow : Window
             _logger.Info($"[File Manager] Bắt đầu tải {items.Count} mục về '{targetDir}'...");
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
             var (success, failed) = await _ftpService.DownloadItemsAsync(settings, items, targetDir, cts.Token);
+
+            if (success > 0)
+            {
+                _lastDownloadedDirectory = targetDir;
+                _currentSettings.LastDownloadDirectory = targetDir;
+                try { _configService.Save(_currentSettings); } catch { }
+
+                if (items.Count == 1)
+                {
+                    _lastDownloadedPath = Path.Combine(targetDir, items[0].Name);
+                }
+                else
+                {
+                    string firstItemPath = Path.Combine(targetDir, items[0].Name);
+                    _lastDownloadedPath = (File.Exists(firstItemPath) || Directory.Exists(firstItemPath))
+                        ? firstItemPath
+                        : targetDir;
+                }
+            }
 
             string msg = $"Đã hoàn tất tải về!\n- Thành công: {success} mục\n- Thất bại: {failed} mục\nĐường dẫn: {targetDir}";
             _logger.Info($"[File Manager] {msg}");
@@ -1010,6 +1037,45 @@ public partial class MainWindow : Window
     }
 
     private void CtxFmDownload_Click(object sender, RoutedEventArgs e) => BtnFmDownload_Click(sender, e);
+
+    private void BtnFmReveal_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_lastDownloadedPath) && File.Exists(_lastDownloadedPath))
+            {
+                string fullFilePath = Path.GetFullPath(_lastDownloadedPath);
+                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{fullFilePath}\"");
+                return;
+            }
+
+            string? dir = (!string.IsNullOrWhiteSpace(_lastDownloadedPath) && Directory.Exists(_lastDownloadedPath))
+                ? _lastDownloadedPath
+                : _lastDownloadedDirectory;
+
+            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+            {
+                string fullDirPath = Path.GetFullPath(dir).TrimEnd('\\', '/');
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = fullDirPath,
+                    UseShellExecute = true
+                });
+                return;
+            }
+
+            MessageBox.Show(this,
+                "Chưa có file hoặc thư mục nào vừa được tải về trong phiên làm việc này.\nHãy nhấn 'Tải Về Máy' trước để tải file về.",
+                "Thông báo",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"[File Manager] Lỗi khi mở thư mục tải về: {ex.Message}");
+            MessageBox.Show(this, $"Không thể mở thư mục:\n{ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private async void BtnFmUploadFile_Click(object sender, RoutedEventArgs e)
     {
