@@ -40,10 +40,9 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBox x:Name="TxtFtpBackupPath" Grid.Column="0" Margin="0,0,10,0"
-                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                                 materialDesign:HintAssist.Hint="Đường dẫn thư mục sao lưu file FTP (VD: D:\WorkManagement\Backups)"
+                                 Style="{StaticResource MaterialDesignTextBox}"
                                  ToolTip="Thư mục sao lưu file trước khi thực hiện xóa khỏi FTP"
-                                 FontSize="12.5" VerticalContentAlignment="Center"/>
+                                 Height="34" FontSize="12.5" VerticalContentAlignment="Center"/>
 
                         <Button x:Name="BtnBrowseFtpBackup" Grid.Column="1"
                                 Style="{StaticResource AppOutlinedButtonStyle}"
@@ -91,10 +90,9 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBox x:Name="TxtProjectBackupPath" Grid.Column="0" Margin="0,0,10,0"
-                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                                 materialDesign:HintAssist.Hint="Đường dẫn thư mục sao lưu mã nguồn dự án (VD: D:\WorkManagement_Backups)"
+                                 Style="{StaticResource MaterialDesignTextBox}"
                                  ToolTip="Thư mục sao lưu mã nguồn Q:\ khi dọn dẹp hoặc xóa dự án"
-                                 FontSize="12.5" VerticalContentAlignment="Center"/>
+                                 Height="34" FontSize="12.5" VerticalContentAlignment="Center"/>
 
                         <Button x:Name="BtnBrowseProjectBackup" Grid.Column="1"
                                 Style="{StaticResource AppOutlinedButtonStyle}"
@@ -142,10 +140,9 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBox x:Name="TxtLogFolderPath" Grid.Column="0" Margin="0,0,10,0"
-                                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                                 materialDesign:HintAssist.Hint="Đường dẫn thư mục lưu file nhật ký (VD: D:\WorkManagement\logs)"
+                                 Style="{StaticResource MaterialDesignTextBox}"
                                  ToolTip="Thư mục ghi nhật ký (log) của hệ thống"
-                                 FontSize="12.5" VerticalContentAlignment="Center"/>
+                                 Height="34" FontSize="12.5" VerticalContentAlignment="Center"/>
 
                         <Button x:Name="BtnBrowseLogFolder" Grid.Column="1"
                                 Style="{StaticResource AppOutlinedButtonStyle}"
