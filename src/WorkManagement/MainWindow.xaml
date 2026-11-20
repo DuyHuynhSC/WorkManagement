@@ -424,7 +424,9 @@
                                                     <materialDesign:PackIcon Kind="ServerNetwork" Width="17" Height="17" VerticalAlignment="Center"
                                                                              Foreground="{DynamicResource AppSectionIconBrush}" Margin="0,0,6,0"/>
                                                     <TextBlock Text="Site Profile:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12"/>
-                                                    <ComboBox x:Name="CboProfiles" Width="170" IsEditable="True"
+                                                    <ComboBox x:Name="CboProfiles" Width="170" IsEditable="False"
+                                                              DisplayMemberPath="Name" SelectedValuePath="Name"
+                                                              KeyboardNavigation.IsTabStop="False"
                                                               VerticalContentAlignment="Center"
                                                               materialDesign:HintAssist.Hint="Chọn Site Profile..."
                                                               SelectionChanged="CboProfiles_SelectionChanged"

@@ -276,6 +276,8 @@ public partial class MainWindow : Window
         try
         {
             CboProfiles.ItemsSource = null;
+            CboProfiles.DisplayMemberPath = nameof(FtpSiteProfile.Name);
+            CboProfiles.SelectedValuePath = nameof(FtpSiteProfile.Name);
             CboProfiles.ItemsSource = _currentSettings.Profiles;
             var matched = _currentSettings.Profiles.FirstOrDefault(p =>
                 string.Equals(p.Name, selectedProfileName, StringComparison.OrdinalIgnoreCase))
@@ -284,11 +286,10 @@ public partial class MainWindow : Window
             if (matched != null)
             {
                 CboProfiles.SelectedItem = matched;
-                CboProfiles.Text = matched.Name;
             }
-            else if (!string.IsNullOrWhiteSpace(selectedProfileName))
+            else if (_currentSettings.Profiles.Count > 0)
             {
-                CboProfiles.Text = selectedProfileName;
+                CboProfiles.SelectedIndex = 0;
             }
 
             _selectedScanProfileNames.RemoveAll(name => !_currentSettings.Profiles.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)));
@@ -708,13 +709,21 @@ public partial class MainWindow : Window
     private async void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (e.Source != MainTabControl) return;
-        if (MainTabControl.SelectedItem == TabFileManager && !_fmLoadedOnce)
+        if (MainTabControl.SelectedItem == TabFileManager)
         {
-            _fmLoadedOnce = true;
-            string initialPath = _currentSettings.RemotePaths?.FirstOrDefault() ?? "/";
-            if (string.IsNullOrWhiteSpace(initialPath)) initialPath = "/";
-            TxtFmRemotePath.Text = initialPath;
-            await LoadFileManagerDirectoryAsync(initialPath);
+            _ = Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Keyboard.ClearFocus();
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+
+            if (!_fmLoadedOnce)
+            {
+                _fmLoadedOnce = true;
+                string initialPath = _currentSettings.RemotePaths?.FirstOrDefault() ?? "/";
+                if (string.IsNullOrWhiteSpace(initialPath)) initialPath = "/";
+                TxtFmRemotePath.Text = initialPath;
+                await LoadFileManagerDirectoryAsync(initialPath);
+            }
         }
     }
 
