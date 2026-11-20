@@ -37,6 +37,7 @@ public partial class ProjectManagerView : UserControl
     private readonly ICollectionView _filterItemsView;
     private string _currentFilterColumnKey = string.Empty;
     private bool _isUpdatingFilterSelectAll;
+    private ProjectEntry? _currentInfoProject;
 
     public ProjectManagerView()
     {
@@ -1298,6 +1299,76 @@ public partial class ProjectManagerView : UserControl
         if (sender is Button btn && btn.DataContext is ProjectEntry p && !string.IsNullOrEmpty(p.ResolvedDbaPassword))
         {
             try { Clipboard.SetText(p.ResolvedDbaPassword); } catch { }
+        }
+    }
+
+    private void BtnProjectInfo_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is not Button btn || btn.DataContext is not ProjectEntry entry) return;
+
+        _currentInfoProject = entry;
+
+        TxtInfoProjectTitle.Text = string.IsNullOrWhiteSpace(entry.ProjectName)
+            ? "Thông tin dự án"
+            : entry.ProjectName;
+
+        var primaryBrush = TryFindResource("AppPrimaryTextBrush") as Brush ?? Brushes.Black;
+        var secondaryBrush = TryFindResource("AppSecondaryTextBrush") as Brush ?? Brushes.Gray;
+
+        if (string.IsNullOrWhiteSpace(entry.Description))
+        {
+            TxtInfoDescription.Text = "(Chưa có giải thích thêm)";
+            TxtInfoDescription.FontStyle = FontStyles.Italic;
+            TxtInfoDescription.Foreground = secondaryBrush;
+        }
+        else
+        {
+            TxtInfoDescription.Text = entry.Description.Trim();
+            TxtInfoDescription.FontStyle = FontStyles.Normal;
+            TxtInfoDescription.Foreground = primaryBrush;
+        }
+
+        if (string.IsNullOrWhiteSpace(entry.Notes))
+        {
+            TxtInfoNotes.Text = "(Chưa có ghi chú)";
+            TxtInfoNotes.FontStyle = FontStyles.Italic;
+            TxtInfoNotes.Foreground = secondaryBrush;
+        }
+        else
+        {
+            TxtInfoNotes.Text = entry.Notes.Trim();
+            TxtInfoNotes.FontStyle = FontStyles.Normal;
+            TxtInfoNotes.Foreground = primaryBrush;
+        }
+
+        if (!string.IsNullOrWhiteSpace(entry.Notes2))
+        {
+            TxtInfoNotes2.Text = entry.Notes2.Trim();
+            TxtInfoNotes2.FontStyle = FontStyles.Normal;
+            TxtInfoNotes2.Foreground = primaryBrush;
+            PanelInfoNotes2.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            PanelInfoNotes2.Visibility = Visibility.Collapsed;
+        }
+
+        ProjectInfoPopup.PlacementTarget = btn;
+        ProjectInfoPopup.IsOpen = true;
+    }
+
+    private void BtnCloseInfoPopup_Click(object sender, RoutedEventArgs e)
+    {
+        ProjectInfoPopup.IsOpen = false;
+    }
+
+    private void BtnEditFromInfoPopup_Click(object sender, RoutedEventArgs e)
+    {
+        ProjectInfoPopup.IsOpen = false;
+        if (_currentInfoProject != null)
+        {
+            OpenEditDialog(_currentInfoProject);
         }
     }
 

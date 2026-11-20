@@ -49,7 +49,13 @@ public class ProjectEntry : INotifyPropertyChanged
     public string Description
     {
         get => _description;
-        set => SetField(ref _description, value);
+        set
+        {
+            if (SetField(ref _description, value))
+            {
+                OnPropertyChanged(nameof(HasAdditionalInfo));
+            }
+        }
     }
 
     public string SourceFolder
@@ -109,7 +115,13 @@ public class ProjectEntry : INotifyPropertyChanged
     public string Notes
     {
         get => _notes;
-        set => SetField(ref _notes, value);
+        set
+        {
+            if (SetField(ref _notes, value))
+            {
+                OnPropertyChanged(nameof(HasAdditionalInfo));
+            }
+        }
     }
 
     public string PersonInCharge
@@ -121,8 +133,20 @@ public class ProjectEntry : INotifyPropertyChanged
     public string Notes2
     {
         get => _notes2;
-        set => SetField(ref _notes2, value);
+        set
+        {
+            if (SetField(ref _notes2, value))
+            {
+                OnPropertyChanged(nameof(HasAdditionalInfo));
+            }
+        }
     }
+
+    [JsonIgnore]
+    public bool HasAdditionalInfo =>
+        !string.IsNullOrWhiteSpace(_description) ||
+        !string.IsNullOrWhiteSpace(_notes) ||
+        !string.IsNullOrWhiteSpace(_notes2);
 
     [JsonIgnore]
     public string ResolvedDbaUser
