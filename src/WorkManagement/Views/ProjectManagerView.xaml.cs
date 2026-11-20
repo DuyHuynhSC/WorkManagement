@@ -199,6 +199,8 @@ public partial class ProjectManagerView : UserControl
         for (int i = 0; i < GridProjects.Columns.Count; i++)
         {
             var col = GridProjects.Columns[i];
+            if (col.Visibility != Visibility.Visible) continue;
+
             string header = GetColumnHeaderString(col);
 
             if (i == 0 || col.Header is CheckBox)
