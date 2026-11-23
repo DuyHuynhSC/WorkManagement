@@ -403,6 +403,10 @@ public partial class VmManagerView : UserControl
             });
         }
 
+        if (ChkFilterSelectAll != null)
+        {
+            ChkFilterSelectAll.Content = "(Chọn tất cả)";
+        }
         TxtFilterSearch.Text = string.Empty;
         UpdateFilterSelectAllState();
         UpdateFilterItemCount();
@@ -412,10 +416,29 @@ public partial class VmManagerView : UserControl
         TxtFilterSearch.Focus();
     }
 
+    private void TxtFilterSearch_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            BtnApplyFilter_Click(sender, e);
+        }
+        else if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            FilterPopup.IsOpen = false;
+        }
+    }
+
     private void TxtFilterSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
         string q = TxtFilterSearch.Text.Trim();
-        BtnClearFilterSearch.Visibility = string.IsNullOrEmpty(q) ? Visibility.Collapsed : Visibility.Visible;
+        bool hasSearch = !string.IsNullOrEmpty(q);
+        BtnClearFilterSearch.Visibility = hasSearch ? Visibility.Visible : Visibility.Collapsed;
+        if (ChkFilterSelectAll != null)
+        {
+            ChkFilterSelectAll.Content = hasSearch ? "(Chọn tất cả kết quả tìm kiếm)" : "(Chọn tất cả)";
+        }
 
         _filterItemsView.Filter = obj =>
         {
@@ -427,6 +450,15 @@ public partial class VmManagerView : UserControl
             return false;
         };
         _filterItemsView.Refresh();
+
+        if (hasSearch)
+        {
+            // Tự động tích chọn tất cả các item khớp với kết quả tìm kiếm
+            foreach (var item in _filterItemsView.Cast<ColumnFilterItem>())
+            {
+                item.IsChecked = true;
+            }
+        }
 
         UpdateFilterSelectAllState();
         UpdateFilterItemCount();
@@ -504,21 +536,52 @@ public partial class VmManagerView : UserControl
     {
         if (string.IsNullOrEmpty(_currentFilterColumnKey)) return;
 
-        int totalCount = _filterItems.Count;
-        int checkedCount = _filterItems.Count(x => x.IsChecked);
+        string searchPattern = TxtFilterSearch.Text.Trim();
+        bool hasSearch = !string.IsNullOrEmpty(searchPattern);
 
-        if (checkedCount == totalCount)
+        if (hasSearch)
         {
-            // All selected = remove column filter
-            _activeColumnFilters.Remove(_currentFilterColumnKey);
-            UpdateColumnButtonVisual(_currentFilterColumnKey, false);
+            // Khi có tìm kiếm trong popup: chỉ lọc theo các mục đang hiển thị và được tích chọn
+            var visibleChecked = _filterItemsView.Cast<ColumnFilterItem>()
+                .Where(x => x.IsChecked)
+                .Select(x => x.RawValue)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Đồng bộ lại IsChecked cho toàn bộ _filterItems
+            foreach (var item in _filterItems)
+            {
+                item.IsChecked = visibleChecked.Contains(item.RawValue);
+            }
+
+            if (visibleChecked.Count == _filterItems.Count && _filterItems.Count > 0)
+            {
+                _activeColumnFilters.Remove(_currentFilterColumnKey);
+                UpdateColumnButtonVisual(_currentFilterColumnKey, false);
+            }
+            else
+            {
+                _activeColumnFilters[_currentFilterColumnKey] = visibleChecked;
+                UpdateColumnButtonVisual(_currentFilterColumnKey, true);
+            }
         }
         else
         {
-            // Subset selected
-            var set = new HashSet<string>(_filterItems.Where(x => x.IsChecked).Select(x => x.RawValue), StringComparer.OrdinalIgnoreCase);
-            _activeColumnFilters[_currentFilterColumnKey] = set;
-            UpdateColumnButtonVisual(_currentFilterColumnKey, true);
+            int totalCount = _filterItems.Count;
+            int checkedCount = _filterItems.Count(x => x.IsChecked);
+
+            if (checkedCount == totalCount)
+            {
+                // All selected = remove column filter
+                _activeColumnFilters.Remove(_currentFilterColumnKey);
+                UpdateColumnButtonVisual(_currentFilterColumnKey, false);
+            }
+            else
+            {
+                // Subset selected
+                var set = new HashSet<string>(_filterItems.Where(x => x.IsChecked).Select(x => x.RawValue), StringComparer.OrdinalIgnoreCase);
+                _activeColumnFilters[_currentFilterColumnKey] = set;
+                UpdateColumnButtonVisual(_currentFilterColumnKey, true);
+            }
         }
 
         FilterPopup.IsOpen = false;
@@ -531,6 +594,11 @@ public partial class VmManagerView : UserControl
 
         _activeColumnFilters.Remove(_currentFilterColumnKey);
         UpdateColumnButtonVisual(_currentFilterColumnKey, false);
+
+        foreach (var item in _filterItems)
+        {
+            item.IsChecked = true;
+        }
 
         FilterPopup.IsOpen = false;
         ApplyFilter();

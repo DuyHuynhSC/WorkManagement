@@ -718,7 +718,8 @@
                                      materialDesign:HintAssist.Hint="Tìm giá trị..."
                                      BorderThickness="0" FontSize="11" VerticalAlignment="Center"
                                      Foreground="{DynamicResource AppPrimaryTextBrush}"
-                                     TextChanged="TxtFilterSearch_TextChanged"/>
+                                     TextChanged="TxtFilterSearch_TextChanged"
+                                     KeyDown="TxtFilterSearch_KeyDown"/>
                             <Button x:Name="BtnClearFilterSearch" Grid.Column="2"
                                     Style="{StaticResource MaterialDesignFlatButton}"
                                     Width="24" Height="24" Padding="0" Visibility="Collapsed"
