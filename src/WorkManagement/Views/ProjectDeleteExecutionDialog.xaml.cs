@@ -21,6 +21,7 @@ public partial class ProjectDeleteExecutionDialog : Window
     private CancellationTokenSource? _cts;
     private bool _isExecuting;
     private bool _isPasswordRevealed;
+    private Dictionary<string, List<string>>? _selectedUsersByProjectId;
     public bool HasDeletedProjects { get; private set; }
 
     public ProjectDeleteExecutionDialog(List<ProjectEntry> projects, ProjectManagerService projectService)
@@ -61,6 +62,38 @@ public partial class ProjectDeleteExecutionDialog : Window
         else
         {
             TxtDbaUser.Text = _settings.DefaultDbaUser;
+        }
+
+        UpdateSelectedUsersBadge();
+    }
+
+    private void UpdateSelectedUsersBadge()
+    {
+        int totalUsers = _projectsToDelete.Sum(p => ProjectCleanupService.ParseUserList(p.DbUsers).Count);
+        int selectedUsers = _selectedUsersByProjectId != null
+            ? _selectedUsersByProjectId.Values.Sum(list => list.Count)
+            : totalUsers;
+
+        TxtSelectedUsersBadge.Text = totalUsers > 0 ? $"({selectedUsers}/{totalUsers} user)" : "(0 user)";
+        BtnSelectUsers.IsEnabled = ChkDeleteUsers.IsChecked == true && totalUsers > 0;
+    }
+
+    private void ChkDeleteUsers_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        UpdateSelectedUsersBadge();
+    }
+
+    private void BtnSelectUsers_Click(object sender, RoutedEventArgs e)
+    {
+        var selectDialog = new SelectUsersToDeleteDialog(_projectsToDelete, _selectedUsersByProjectId)
+        {
+            Owner = this
+        };
+
+        if (selectDialog.ShowDialog() == true)
+        {
+            _selectedUsersByProjectId = selectDialog.GetSelectedUsersByProjectId();
+            UpdateSelectedUsersBadge();
         }
     }
 
@@ -139,6 +172,28 @@ public partial class ProjectDeleteExecutionDialog : Window
             return;
         }
 
+        // Nếu người dùng chọn xóa User trong Oracle DB, mở màn hình xác nhận và chọn từng user để tránh xóa nhầm
+        if (_settings.EnableDeleteUsers)
+        {
+            int totalDbUsers = _projectsToDelete.Sum(p => ProjectCleanupService.ParseUserList(p.DbUsers).Count);
+            if (totalDbUsers > 0 && _selectedUsersByProjectId == null)
+            {
+                var selectDialog = new SelectUsersToDeleteDialog(_projectsToDelete, _selectedUsersByProjectId)
+                {
+                    Owner = this
+                };
+
+                if (selectDialog.ShowDialog() != true)
+                {
+                    // Người dùng hủy ở màn hình chọn User
+                    return;
+                }
+
+                _selectedUsersByProjectId = selectDialog.GetSelectedUsersByProjectId();
+                UpdateSelectedUsersBadge();
+            }
+        }
+
         var confirm = MessageBox.Show(this,
             $"CẢNH BÁO QUAN TRỌNG:\nBạn có chắc chắn muốn tiến hành xóa {_projectsToDelete.Count} dự án đã chọn?\n\nThao tác này sẽ thực thi tuần tự xóa Source Folder trên ổ mạng, xóa User và xóa Tablespace trong Database!",
             "Xác nhận hành động xóa",
@@ -155,19 +210,40 @@ public partial class ProjectDeleteExecutionDialog : Window
         try
         {
             int successCount = 0;
+            bool wasCancelled = false;
+
             for (int i = 0; i < _projectsToDelete.Count; i++)
             {
+                if (_cts?.IsCancellationRequested == true)
+                {
+                    wasCancelled = true;
+                    break;
+                }
+
                 var proj = _projectsToDelete[i];
                 // Sử dụng mật khẩu riêng của từng dự án nếu có, nếu không thì dùng mật khẩu vừa nhập trên form
                 string userForThis = !string.IsNullOrWhiteSpace(proj.ResolvedDbaUser) ? proj.ResolvedDbaUser : (!string.IsNullOrWhiteSpace(proj.DbaUsername) ? proj.DbaUsername : dbaUser);
                 string passForThis = !string.IsNullOrWhiteSpace(proj.ResolvedDbaPassword) ? proj.ResolvedDbaPassword : (!string.IsNullOrWhiteSpace(proj.DbaPassword) ? proj.DbaPassword : dbaPass);
+
+                List<string>? specificUsers = null;
+                if (_selectedUsersByProjectId != null && _selectedUsersByProjectId.TryGetValue(proj.Id, out var uList))
+                {
+                    specificUsers = uList;
+                }
 
                 bool ok = await _cleanupService.ExecuteProjectCleanupAsync(
                     proj,
                     _settings,
                     userForThis,
                     passForThis,
-                    _cts.Token);
+                    specificUsers,
+                    _cts!.Token);
+
+                if (_cts?.IsCancellationRequested == true)
+                {
+                    wasCancelled = true;
+                    break;
+                }
 
                 if (ok)
                 {
@@ -176,11 +252,30 @@ public partial class ProjectDeleteExecutionDialog : Window
                 }
             }
 
-            MessageBox.Show(this,
-                $"Quy trình dọn dẹp đã kết thúc!\nĐã xử lý: {successCount}/{_projectsToDelete.Count} dự án thành công.\nVui lòng kiểm tra màn hình Log để xem chi tiết.",
-                "Hoàn tất dọn dẹp",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            if (wasCancelled)
+            {
+                MessageBox.Show(this,
+                    "Quy trình dọn dẹp đã được dừng lại theo yêu cầu của bạn.",
+                    "Đã dừng",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show(this,
+                    $"Quy trình dọn dẹp đã kết thúc!\nĐã xử lý: {successCount}/{_projectsToDelete.Count} dự án thành công.\nVui lòng kiểm tra màn hình Log để xem chi tiết.",
+                    "Hoàn tất dọn dẹp",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            MessageBox.Show(this, "Quy trình dọn dẹp đã được dừng lại theo yêu cầu.", "Đã dừng", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex) when (_cts?.IsCancellationRequested == true || ex.Message.Contains("ORA-01013"))
+        {
+            MessageBox.Show(this, "Quy trình dọn dẹp đã được dừng lại theo yêu cầu.", "Đã dừng", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {

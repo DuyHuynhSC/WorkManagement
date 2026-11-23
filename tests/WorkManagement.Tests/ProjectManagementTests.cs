@@ -540,4 +540,65 @@ public class ProjectManagementTests
         var emptyResult2 = DashboardView.CheckMissingSourceFolders(new List<ProjectEntry>());
         Assert.Empty(emptyResult2);
     }
+
+    [Fact]
+    public async Task ExecuteProjectCleanupAsync_WhenCancelled_ReturnsFalseGracefully()
+    {
+        var service = new ProjectCleanupService();
+        var project = new ProjectEntry
+        {
+            ProjectName = "CancelTest",
+            HostServer = "127.0.0.1",
+            Port = "1521",
+            ServiceName = "ORCL",
+            DbUsers = "USR1, USR2"
+        };
+        var settings = new ProjectCleanupSettings
+        {
+            EnableBackupFolder = false,
+            EnableBackupDatabase = false,
+            EnableDeleteFolder = false,
+            EnableDeleteUsers = true,
+            EnableDeleteTablespace = false
+        };
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel(); // Hủy ngay từ đầu
+
+        bool result = await service.ExecuteProjectCleanupAsync(
+            project,
+            settings,
+            "SYSTEM",
+            "password",
+            specificUsersToDelete: new List<string> { "USR1" },
+            cancellationToken: cts.Token);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void UserToDeleteItem_SelectionAndNotification_WorksAsExpected()
+    {
+        var item = new UserToDeleteItem
+        {
+            UserName = "ESC_RPS",
+            ProjectName = "ESCO",
+            ProjectId = "p-1",
+            HostServer = "192.168.1.1:1521/ORCL"
+        };
+
+        bool propertyChangedRaised = false;
+        item.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(UserToDeleteItem.IsSelected))
+            {
+                propertyChangedRaised = true;
+            }
+        };
+
+        Assert.True(item.IsSelected);
+        item.IsSelected = false;
+        Assert.False(item.IsSelected);
+        Assert.True(propertyChangedRaised);
+    }
 }

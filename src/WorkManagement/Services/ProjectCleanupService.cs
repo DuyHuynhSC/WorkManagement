@@ -102,6 +102,7 @@ public class ProjectCleanupService
         ProjectCleanupSettings settings,
         string dbaUser,
         string dbaPassword,
+        List<string>? specificUsersToDelete = null,
         CancellationToken cancellationToken = default)
     {
         string projName = string.IsNullOrWhiteSpace(project.ProjectName) ? "UnknownProject" : project.ProjectName;
@@ -153,7 +154,7 @@ public class ProjectCleanupService
             if (settings.EnableDeleteUsers || settings.EnableDeleteTablespace)
             {
                 Report(65, $"[BƯỚC 3/5 & 4/5] Kết nối Oracle Database để dọn dẹp User & Tablespace...");
-                await CleanupOracleDatabaseAsync(project, settings, dbaUser, dbaPassword, cancellationToken);
+                await CleanupOracleDatabaseAsync(project, settings, dbaUser, dbaPassword, specificUsersToDelete, cancellationToken);
             }
             else
             {
@@ -168,7 +169,19 @@ public class ProjectCleanupService
         }
         catch (OperationCanceledException)
         {
-            Report(0, $"[ĐÃ HỦY] Người dùng đã dừng quy trình xóa dự án {projName}.", isError: true);
+            Report(0, $"[ĐÃ HỦY] Người dùng đã dừng quy trình xóa dự án {projName}.", isError: false);
+            Log($"[CANCEL] Quy trình dọn dẹp bị hủy bởi người dùng.");
+            return false;
+        }
+        catch (OracleException oex) when (oex.Number == 1013 || cancellationToken.IsCancellationRequested)
+        {
+            Report(0, $"[ĐÃ HỦY] Người dùng đã dừng quy trình xóa dự án {projName}.", isError: false);
+            Log($"[CANCEL] Thao tác Oracle bị dừng bởi người dùng (ORA-01013).");
+            return false;
+        }
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested || ex.Message.Contains("ORA-01013"))
+        {
+            Report(0, $"[ĐÃ HỦY] Người dùng đã dừng quy trình xóa dự án {projName}.", isError: false);
             Log($"[CANCEL] Quy trình dọn dẹp bị hủy bởi người dùng.");
             return false;
         }
@@ -417,92 +430,154 @@ public class ProjectCleanupService
         ProjectCleanupSettings settings,
         string dbaUser,
         string dbaPassword,
+        List<string>? specificUsersToDelete,
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(project.HostServer))
         {
-            Log($"[CLEANUP-DB] Bỏ qua vì không có Host Server DB.");
+            Report(0, $"[CLEANUP-DB] Bỏ qua vì không có Host Server DB.");
             return;
         }
 
-        var users = ParseUserList(project.DbUsers);
+        var allProjectUsers = ParseUserList(project.DbUsers);
+        var users = specificUsersToDelete != null
+            ? specificUsersToDelete.Intersect(allProjectUsers, StringComparer.OrdinalIgnoreCase).ToList()
+            : allProjectUsers;
+
         var tablespaces = ParseTablespaceList(project.Tablespace);
 
-        Log($"[CLEANUP-DB] Đang kết nối tới Oracle Database {project.HostServer}:{project.Port}/{project.ServiceName} bằng tài khoản '{dbaUser}'...");
+        Report(66, $"[CLEANUP-DB] Đang kết nối tới Oracle Database {project.HostServer}:{project.Port}/{project.ServiceName} bằng tài khoản '{dbaUser}'...");
         using var conn = await OpenOracleConnectionAsync(project, dbaUser, dbaPassword, ct);
-        Log($"[CLEANUP-DB] Kết nối Database thành công!");
+        Report(68, $"[CLEANUP-DB] Kết nối Database thành công!");
 
         // 3.1. Xóa các Users
         if (settings.EnableDeleteUsers && users.Count > 0)
         {
-            Report(75, $"[DELETE-USERS] Đang xóa {users.Count} user(s): {string.Join(", ", users)}...");
-            foreach (var user in users)
+            Report(70, $"[DELETE-USERS] Bắt đầu quy trình xóa {users.Count} user(s): {string.Join(", ", users)}...");
+
+            // Đóng session của TẤT CẢ user trong dự án trước để tránh lock chéo giữa các user
+            await KillSessionsForUsersAsync(conn, users, ct);
+
+            for (int i = 0; i < users.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
-                await DropOracleUserAsync(conn, user, ct);
+                string user = users[i];
+                double progress = 72 + (16.0 * (i + 1) / users.Count);
+                await DropOracleUserAsync(conn, user, i + 1, users.Count, progress, ct);
             }
+        }
+        else if (settings.EnableDeleteUsers && users.Count == 0)
+        {
+            Report(75, $"[DELETE-USERS] Bỏ qua xóa User do không có user nào được chọn.");
         }
 
         // 3.2. Xóa các Tablespaces
         if (settings.EnableDeleteTablespace && tablespaces.Count > 0)
         {
-            Report(90, $"[DELETE-TABLESPACE] Đang xóa {tablespaces.Count} tablespace(s): {string.Join(", ", tablespaces)}...");
+            Report(90, $"[DELETE-TABLESPACE] Bắt đầu kiểm tra và xóa {tablespaces.Count} tablespace(s): {string.Join(", ", tablespaces)}...");
             foreach (var ts in tablespaces)
             {
                 ct.ThrowIfCancellationRequested();
-                await DropOracleTablespaceAsync(conn, ts, users, ct);
+                await DropOracleTablespaceAsync(conn, ts, allProjectUsers, ct);
             }
         }
     }
 
-    private async Task DropOracleUserAsync(OracleConnection conn, string user, CancellationToken ct)
+    private async Task KillSessionsForUsersAsync(OracleConnection conn, List<string> users, CancellationToken ct)
     {
+        if (users.Count == 0) return;
+
+        try
+        {
+            Report(71, $"[KILL-SESSIONS] Đang kiểm tra active session của {users.Count} user(s)...");
+
+            var userParams = new List<string>();
+            using var sessionCmd = conn.CreateCommand();
+            sessionCmd.CommandTimeout = 30;
+
+            for (int i = 0; i < users.Count; i++)
+            {
+                string p = $"u{i}";
+                userParams.Add($":{p}");
+                sessionCmd.Parameters.Add(new OracleParameter(p, users[i].ToUpperInvariant()));
+            }
+
+            sessionCmd.CommandText = $"SELECT SID, SERIAL#, USERNAME FROM V$SESSION WHERE UPPER(USERNAME) IN ({string.Join(", ", userParams)})";
+
+            var sessionsToKill = new List<(string Sid, string Serial, string Username)>();
+            using (var reader = await sessionCmd.ExecuteReaderAsync(ct))
+            {
+                while (await reader.ReadAsync(ct))
+                {
+                    sessionsToKill.Add((reader[0].ToString()!, reader[1].ToString()!, reader[2].ToString()!));
+                }
+            }
+
+            if (sessionsToKill.Count == 0)
+            {
+                Report(72, $"[KILL-SESSIONS] Không phát hiện session nào đang kết nối.");
+                return;
+            }
+
+            Report(72, $"[KILL-SESSIONS] Phát hiện {sessionsToKill.Count} session đang hoạt động. Đang ngắt kết nối...");
+            foreach (var s in sessionsToKill)
+            {
+                ct.ThrowIfCancellationRequested();
+                using var killCmd = conn.CreateCommand();
+                killCmd.CommandTimeout = 15;
+                killCmd.CommandText = $"ALTER SYSTEM KILL SESSION '{s.Sid},{s.Serial}' IMMEDIATE";
+                try
+                {
+                    await killCmd.ExecuteNonQueryAsync(ct);
+                    Report(72, $"[KILL-SESSION] Đã đóng session SID={s.Sid}, SERIAL#={s.Serial} của user '{s.Username}'");
+                }
+                catch (Exception ex)
+                {
+                    Log($"[KILL-SESSION] Cảnh báo kill session {s.Sid},{s.Serial}: {ex.Message}");
+                }
+            }
+
+            // Chờ một khoảng ngắn để Oracle PMON thu hồi và dọn dẹp các session KILLED
+            await Task.Delay(1500, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log($"[KILL-SESSIONS] Cảnh báo kiểm tra session: {ex.Message}");
+        }
+    }
+
+    private async Task DropOracleUserAsync(OracleConnection conn, string user, int index, int total, double progress, CancellationToken ct)
+    {
+        Report(progress, $"[DROP-USER] [{index}/{total}] Đang kiểm tra sự tồn tại của User '{user}'...");
+
         // Kiểm tra xem User có tồn tại không
         using (var checkCmd = conn.CreateCommand())
         {
-            checkCmd.CommandText = "SELECT COUNT(*) FROM DBA_USERS WHERE USERNAME = :u";
-            checkCmd.Parameters.Add(new OracleParameter("u", user));
+            checkCmd.CommandTimeout = 30;
+            checkCmd.CommandText = "SELECT COUNT(*) FROM DBA_USERS WHERE UPPER(USERNAME) = :u";
+            checkCmd.Parameters.Add(new OracleParameter("u", user.ToUpperInvariant()));
             var countObj = await checkCmd.ExecuteScalarAsync(ct);
             int count = Convert.ToInt32(countObj);
             if (count == 0)
             {
-                Log($"[DROP-USER] User '{user}' không tồn tại trong database (Bỏ qua).");
+                Report(progress, $"[DROP-USER] [{index}/{total}] User '{user}' không tồn tại trong database (Bỏ qua).");
                 return;
             }
         }
 
-        // Kill active sessions của user để tránh lỗi ORA-01940
-        try
-        {
-            using var sessionCmd = conn.CreateCommand();
-            sessionCmd.CommandText = "SELECT SID, SERIAL# FROM V$SESSION WHERE USERNAME = :u";
-            sessionCmd.Parameters.Add(new OracleParameter("u", user));
-            using var reader = await sessionCmd.ExecuteReaderAsync(ct);
-            var sessionsToKill = new List<(string Sid, string Serial)>();
-            while (await reader.ReadAsync(ct))
-            {
-                sessionsToKill.Add((reader[0].ToString()!, reader[1].ToString()!));
-            }
-
-            foreach (var s in sessionsToKill)
-            {
-                using var killCmd = conn.CreateCommand();
-                killCmd.CommandText = $"ALTER SYSTEM KILL SESSION '{s.Sid},{s.Serial}' IMMEDIATE";
-                await killCmd.ExecuteNonQueryAsync(ct);
-                Log($"[KILL-SESSION] Đã đóng session đang kết nối: SID={s.Sid}, SERIAL#={s.Serial} của user '{user}'");
-            }
-        }
-        catch (Exception ex)
-        {
-            Log($"[KILL-SESSION] Cảnh báo khi kiểm tra session của '{user}': {ex.Message}");
-        }
-
         // Thực hiện DROP USER ... CASCADE
+        Report(progress, $"[DROP-USER] [{index}/{total}] Đang thực thi DROP USER \"{user}\" CASCADE (với schema nhiều dữ liệu, bước này có thể mất vài chục giây đến vài phút)...");
+
         using (var dropCmd = conn.CreateCommand())
         {
+            dropCmd.CommandTimeout = 300; // 5 phút timeout tránh treo vĩnh viễn
             dropCmd.CommandText = $"DROP USER \"{user}\" CASCADE";
             await dropCmd.ExecuteNonQueryAsync(ct);
-            Log($"[DROP-USER] ĐÃ XÓA THÀNH CÔNG User: '{user}' (CASCADE)");
+            Report(progress, $"[DROP-USER] [{index}/{total}] ĐÃ XÓA THÀNH CÔNG User: '{user}' (CASCADE)");
         }
     }
 
@@ -511,20 +586,23 @@ public class ProjectCleanupService
         // 1. Kiểm tra an toàn: không bao giờ xóa tablespace hệ thống
         if (SystemTablespaces.Contains(ts))
         {
-            Log($"[DROP-TABLESPACE] CẢNH BÁO AN TOÀN: Tablespace '{ts}' là tablespace hệ thống mặc định. Tuyệt đối không xóa!", isError: true);
+            Report(90, $"[DROP-TABLESPACE] CẢNH BÁO AN TOÀN: Tablespace '{ts}' là tablespace hệ thống mặc định. Tuyệt đối không xóa!", isError: true);
             return;
         }
+
+        Report(90, $"[DROP-TABLESPACE] Đang kiểm tra tablespace '{ts}'...");
 
         // 2. Kiểm tra sự tồn tại của tablespace
         using (var checkCmd = conn.CreateCommand())
         {
-            checkCmd.CommandText = "SELECT COUNT(*) FROM DBA_TABLESPACES WHERE TABLESPACE_NAME = :ts";
-            checkCmd.Parameters.Add(new OracleParameter("ts", ts));
+            checkCmd.CommandTimeout = 30;
+            checkCmd.CommandText = "SELECT COUNT(*) FROM DBA_TABLESPACES WHERE UPPER(TABLESPACE_NAME) = :ts";
+            checkCmd.Parameters.Add(new OracleParameter("ts", ts.ToUpperInvariant()));
             var countObj = await checkCmd.ExecuteScalarAsync(ct);
             int count = Convert.ToInt32(countObj);
             if (count == 0)
             {
-                Log($"[DROP-TABLESPACE] Tablespace '{ts}' không tồn tại trong database (Bỏ qua).");
+                Report(90, $"[DROP-TABLESPACE] Tablespace '{ts}' không tồn tại trong database (Bỏ qua).");
                 return;
             }
         }
@@ -533,8 +611,9 @@ public class ProjectCleanupService
         try
         {
             using var userCheckCmd = conn.CreateCommand();
-            userCheckCmd.CommandText = "SELECT USERNAME FROM DBA_USERS WHERE DEFAULT_TABLESPACE = :ts";
-            userCheckCmd.Parameters.Add(new OracleParameter("ts", ts));
+            userCheckCmd.CommandTimeout = 30;
+            userCheckCmd.CommandText = "SELECT USERNAME FROM DBA_USERS WHERE UPPER(DEFAULT_TABLESPACE) = :ts";
+            userCheckCmd.Parameters.Add(new OracleParameter("ts", ts.ToUpperInvariant()));
             using var reader = await userCheckCmd.ExecuteReaderAsync(ct);
             var remainingUsers = new List<string>();
             while (await reader.ReadAsync(ct))
@@ -548,9 +627,13 @@ public class ProjectCleanupService
 
             if (remainingUsers.Count > 0)
             {
-                Log($"[DROP-TABLESPACE] CẢNH BÁO AN TOÀN: Tablespace '{ts}' vẫn đang được sử dụng bởi các user khác ({string.Join(", ", remainingUsers)}). Giữ lại tablespace để bảo toàn dữ liệu!", isError: true);
+                Report(90, $"[DROP-TABLESPACE] CẢNH BÁO AN TOÀN: Tablespace '{ts}' vẫn đang được sử dụng bởi các user khác ({string.Join(", ", remainingUsers)}). Giữ lại tablespace để bảo toàn dữ liệu!", isError: true);
                 return;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -558,11 +641,13 @@ public class ProjectCleanupService
         }
 
         // 4. Thực thi DROP TABLESPACE ... INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS
+        Report(92, $"[DROP-TABLESPACE] Đang thực thi DROP TABLESPACE \"{ts}\" INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS...");
         using (var dropCmd = conn.CreateCommand())
         {
+            dropCmd.CommandTimeout = 300;
             dropCmd.CommandText = $"DROP TABLESPACE \"{ts}\" INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS";
             await dropCmd.ExecuteNonQueryAsync(ct);
-            Log($"[DROP-TABLESPACE] ĐÃ XÓA THÀNH CÔNG Tablespace: '{ts}' (kèm Datafiles)");
+            Report(95, $"[DROP-TABLESPACE] ĐÃ XÓA THÀNH CÔNG Tablespace: '{ts}' (kèm Datafiles)");
         }
     }
 

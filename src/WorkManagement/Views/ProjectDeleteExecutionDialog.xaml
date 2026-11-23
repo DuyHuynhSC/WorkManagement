@@ -49,8 +49,20 @@
                         <CheckBox x:Name="ChkDeleteFolder" Content="1. Xóa Source Folder trên Network Drive"
                                   IsChecked="True" FontSize="11.5" Margin="0,0,0,4" Cursor="Hand"/>
 
-                        <CheckBox x:Name="ChkDeleteUsers" Content="2. Xóa Users trong Oracle DB (Kill session &amp; DROP CASCADE)"
-                                  IsChecked="True" FontSize="11.5" Margin="0,0,0,4" Cursor="Hand"/>
+                        <DockPanel Margin="0,0,0,4">
+                            <CheckBox x:Name="ChkDeleteUsers" Content="2. Xóa Users trong Oracle DB (Kill session &amp; DROP CASCADE)"
+                                      IsChecked="True" FontSize="11.5" Cursor="Hand" VerticalAlignment="Center"
+                                      Checked="ChkDeleteUsers_CheckedChanged" Unchecked="ChkDeleteUsers_CheckedChanged"/>
+                            <Button x:Name="BtnSelectUsers" Style="{StaticResource MaterialDesignFlatButton}"
+                                    Height="22" Padding="6,0" Margin="6,0,0,0" HorizontalAlignment="Left"
+                                    Click="BtnSelectUsers_Click" ToolTip="Xem và chọn lọc từng user cần xóa để tránh xóa nhầm">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="AccountFilterOutline" Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock x:Name="TxtSelectedUsersBadge" Text="(Chọn user)" FontSize="11" FontWeight="Bold"
+                                               Foreground="{DynamicResource AppPrimaryButtonBackground}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </DockPanel>
 
                         <CheckBox x:Name="ChkDeleteTablespace" Content="3. Xóa Tablespace chứa User (kèm Datafiles)"
                                   IsChecked="True" FontSize="11.5" Margin="0,0,0,4" Cursor="Hand"/>
