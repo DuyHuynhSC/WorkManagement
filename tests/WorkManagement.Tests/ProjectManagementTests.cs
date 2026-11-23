@@ -651,4 +651,94 @@ public class ProjectManagementTests
 
         Assert.Null(threadEx);
     }
+
+    [Fact]
+    public void UserToDeleteItem_BackupSelection_WorksAsExpected()
+    {
+        var item = new UserToDeleteItem
+        {
+            UserName = "ESC_RPS",
+            ProjectName = "ESCO",
+            ProjectId = "p-1",
+            HostServer = "192.168.1.1:1521/ORCL"
+        };
+
+        bool backupChanged = false;
+        item.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(UserToDeleteItem.IsBackupSelected))
+            {
+                backupChanged = true;
+            }
+        };
+
+        Assert.True(item.IsBackupSelected);
+        item.IsBackupSelected = false;
+        Assert.False(item.IsBackupSelected);
+        Assert.True(backupChanged);
+    }
+
+    [Fact]
+    public void SelectUsersToDeleteDialog_SelectionFilters_DistinguishDeleteAndBackup()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                WpfTestHelper.EnsureApplication();
+
+                var projects = new List<ProjectEntry>
+                {
+                    new()
+                    {
+                        Id = "proj-1",
+                        ProjectName = "ESCO",
+                        DbUsers = "USR1, USR2, USR3"
+                    }
+                };
+
+                var deleteDict = new Dictionary<string, List<string>>
+                {
+                    ["proj-1"] = new List<string> { "USR1", "USR2" }
+                };
+                var backupDict = new Dictionary<string, List<string>>
+                {
+                    ["proj-1"] = new List<string> { "USR2" }
+                };
+
+                var dialog = new SelectUsersToDeleteDialog(projects, deleteDict, backupDict);
+
+                var deleteUsers = dialog.GetSelectedUsersByProjectId()["proj-1"];
+                var backupUsers = dialog.GetSelectedBackupUsersByProjectId()["proj-1"];
+
+                Assert.Equal(2, deleteUsers.Count);
+                Assert.Contains("USR1", deleteUsers);
+                Assert.Contains("USR2", deleteUsers);
+
+                Assert.Single(backupUsers);
+                Assert.Contains("USR2", backupUsers);
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join(10000);
+
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
+    public void ProjectCleanupService_ConfirmDeleteRemainingUsersAsync_PropertyCanBeSet()
+    {
+        var service = new ProjectCleanupService();
+        Assert.Null(service.ConfirmDeleteRemainingUsersAsync);
+
+        service.ConfirmDeleteRemainingUsersAsync = (ts, users) => Task.FromResult(true);
+        Assert.NotNull(service.ConfirmDeleteRemainingUsersAsync);
+    }
 }

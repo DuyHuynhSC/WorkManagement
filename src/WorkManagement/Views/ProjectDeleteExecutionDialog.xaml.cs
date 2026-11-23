@@ -22,6 +22,7 @@ public partial class ProjectDeleteExecutionDialog : Window
     private bool _isExecuting;
     private bool _isPasswordRevealed;
     private Dictionary<string, List<string>>? _selectedUsersByProjectId;
+    private Dictionary<string, List<string>>? _selectedBackupUsersByProjectId;
     public bool HasDeletedProjects { get; private set; }
 
     public ProjectDeleteExecutionDialog(List<ProjectEntry> projects, ProjectManagerService projectService)
@@ -34,8 +35,29 @@ public partial class ProjectDeleteExecutionDialog : Window
         InitializeComponent();
 
         _cleanupService.OnProgress += CleanupService_OnProgress;
+        _cleanupService.ConfirmDeleteRemainingUsersAsync = PromptConfirmDeleteRemainingUsersAsync;
 
         InitDialog();
+    }
+
+    private Task<bool> PromptConfirmDeleteRemainingUsersAsync(string tablespace, List<string> remainingUsers)
+    {
+        return Dispatcher.InvokeAsync(() =>
+        {
+            string userListStr = string.Join(", ", remainingUsers);
+            var result = MessageBox.Show(this,
+                $"CẢNH BÁO AN TOÀN DỮ LIỆU:\n\n" +
+                $"Tablespace '{tablespace}' hiện vẫn còn {remainingUsers.Count} user đang tồn tại trong Database:\n" +
+                $"{userListStr}\n\n" +
+                $"Bạn có muốn XÓA LUÔN các user này (Kill session & DROP CASCADE) để tiếp tục xóa tablespace không?\n\n" +
+                $"- Chọn 'Yes' (Có): Tự động xóa các user này rồi tiến hành xóa tablespace.\n" +
+                $"- Chọn 'No' (Không): Giữ lại các user và BỎ QUA việc xóa tablespace '{tablespace}'.",
+                "Cảnh báo User tồn tại trong Tablespace",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            return result == MessageBoxResult.Yes;
+        }).Task;
     }
 
     private void InitDialog()
@@ -91,7 +113,11 @@ public partial class ProjectDeleteExecutionDialog : Window
 
     private void BtnSelectUsers_Click(object sender, RoutedEventArgs e)
     {
-        var selectDialog = new SelectUsersToDeleteDialog(_projectsToDelete, _selectedUsersByProjectId)
+        var selectDialog = new SelectUsersToDeleteDialog(
+            _projectsToDelete,
+            _selectedUsersByProjectId,
+            _selectedBackupUsersByProjectId,
+            defaultBackup: ChkBackupDatabase.IsChecked == true)
         {
             Owner = this
         };
@@ -99,6 +125,7 @@ public partial class ProjectDeleteExecutionDialog : Window
         if (selectDialog.ShowDialog() == true)
         {
             _selectedUsersByProjectId = selectDialog.GetSelectedUsersByProjectId();
+            _selectedBackupUsersByProjectId = selectDialog.GetSelectedBackupUsersByProjectId();
             UpdateSelectedUsersBadge();
         }
     }
@@ -178,13 +205,17 @@ public partial class ProjectDeleteExecutionDialog : Window
             return;
         }
 
-        // Nếu người dùng chọn xóa User trong Oracle DB, mở màn hình xác nhận và chọn từng user để tránh xóa nhầm
-        if (_settings.EnableDeleteUsers)
+        // Nếu người dùng chọn xóa User hoặc sao lưu Database, mở màn hình xác nhận và chọn từng user
+        if (_settings.EnableDeleteUsers || _settings.EnableBackupDatabase)
         {
             int totalDbUsers = _projectsToDelete.Sum(p => ProjectCleanupService.ParseUserList(p.DbUsers).Count);
             if (totalDbUsers > 0 && _selectedUsersByProjectId == null)
             {
-                var selectDialog = new SelectUsersToDeleteDialog(_projectsToDelete, _selectedUsersByProjectId)
+                var selectDialog = new SelectUsersToDeleteDialog(
+                    _projectsToDelete,
+                    _selectedUsersByProjectId,
+                    _selectedBackupUsersByProjectId,
+                    defaultBackup: _settings.EnableBackupDatabase)
                 {
                     Owner = this
                 };
@@ -196,6 +227,7 @@ public partial class ProjectDeleteExecutionDialog : Window
                 }
 
                 _selectedUsersByProjectId = selectDialog.GetSelectedUsersByProjectId();
+                _selectedBackupUsersByProjectId = selectDialog.GetSelectedBackupUsersByProjectId();
                 UpdateSelectedUsersBadge();
             }
         }
@@ -237,12 +269,19 @@ public partial class ProjectDeleteExecutionDialog : Window
                     specificUsers = uList;
                 }
 
+                List<string>? specificBackupUsers = null;
+                if (_selectedBackupUsersByProjectId != null && _selectedBackupUsersByProjectId.TryGetValue(proj.Id, out var bList))
+                {
+                    specificBackupUsers = bList;
+                }
+
                 bool ok = await _cleanupService.ExecuteProjectCleanupAsync(
                     proj,
                     _settings,
                     userForThis,
                     passForThis,
                     specificUsers,
+                    specificBackupUsers,
                     _cts!.Token);
 
                 if (_cts?.IsCancellationRequested == true)

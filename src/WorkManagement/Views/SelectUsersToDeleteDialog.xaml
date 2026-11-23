@@ -44,22 +44,37 @@
         <!-- ROW 2: TOOLBAR CHỌN NHANH -->
         <DockPanel Grid.Row="2" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="30" Padding="10,0" Margin="0,0,8,0" Click="BtnSelectAll_Click">
+                <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="28" Padding="8,0" Margin="0,0,6,0" Click="BtnSelectAll_Click" ToolTip="Chọn xóa tất cả">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="CheckboxMultipleMarkedOutline" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Chọn tất cả" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold"/>
+                        <materialDesign:PackIcon Kind="CheckboxMultipleMarkedOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Xóa tất cả" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="30" Padding="10,0" Click="BtnUnselectAll_Click">
+                <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="28" Padding="8,0" Margin="0,0,10,0" Click="BtnUnselectAll_Click" ToolTip="Bỏ chọn xóa tất cả">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="CheckboxMultipleBlankOutline" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Bỏ chọn tất cả" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold"/>
+                        <materialDesign:PackIcon Kind="CheckboxMultipleBlankOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Bỏ chọn xóa" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <Separator Margin="0,2,10,2" Background="{DynamicResource AppSubtlePanelBorderBrush}"/>
+
+                <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="28" Padding="8,0" Margin="0,0,6,0" Click="BtnBackupAll_Click" ToolTip="Chọn sao lưu tất cả">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="CloudDownloadOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                        <TextBlock Text="Sao lưu tất cả" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource AppOutlinedButtonStyle}" Height="28" Padding="8,0" Click="BtnUnbackupAll_Click" ToolTip="Bỏ chọn sao lưu tất cả">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="CloudOffOutline" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Bỏ sao lưu" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
 
             <TextBlock x:Name="TxtSelectionCount" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
-                       Text="Đã chọn: 0 user" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                       Text="Xóa: 0 | Sao lưu: 0" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
         </DockPanel>
 
         <!-- ROW 3: USER LIST -->
@@ -73,10 +88,11 @@
                       materialDesign:DataGridAssist.ColumnHeaderPadding="8,6"
                       BorderThickness="0">
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="Xóa" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
-                    <DataGridTextColumn Header="Oracle Username" Binding="{Binding UserName}" Width="200"
+                    <DataGridCheckBoxColumn Header="Xóa" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
+                    <DataGridCheckBoxColumn Header="Sao Lưu" Binding="{Binding IsBackupSelected, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                    <DataGridTextColumn Header="Oracle Username" Binding="{Binding UserName}" Width="190"
                                         FontFamily="Consolas" FontWeight="Bold" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Dự án" Binding="{Binding ProjectName}" Width="150" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Dự án" Binding="{Binding ProjectName}" Width="140" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Database Server" Binding="{Binding HostServer}" Width="*" IsReadOnly="True"/>
                 </DataGrid.Columns>
             </DataGrid>

@@ -13,6 +13,7 @@ namespace WorkManagement.Views;
 public class UserToDeleteItem : INotifyPropertyChanged
 {
     private bool _isSelected = true;
+    private bool _isBackupSelected = true;
 
     public bool IsSelected
     {
@@ -22,6 +23,19 @@ public class UserToDeleteItem : INotifyPropertyChanged
             if (_isSelected != value)
             {
                 _isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public bool IsBackupSelected
+    {
+        get => _isBackupSelected;
+        set
+        {
+            if (_isBackupSelected != value)
+            {
+                _isBackupSelected = value;
                 OnPropertyChanged();
             }
         }
@@ -44,7 +58,11 @@ public partial class SelectUsersToDeleteDialog : Window
 {
     public ObservableCollection<UserToDeleteItem> UserItems { get; } = new();
 
-    public SelectUsersToDeleteDialog(List<ProjectEntry> projects, Dictionary<string, List<string>>? preselected = null)
+    public SelectUsersToDeleteDialog(
+        List<ProjectEntry> projects,
+        Dictionary<string, List<string>>? preselectedToDelete = null,
+        Dictionary<string, List<string>>? preselectedToBackup = null,
+        bool defaultBackup = true)
     {
         InitializeComponent();
 
@@ -63,18 +81,28 @@ public partial class SelectUsersToDeleteDialog : Window
             }
 
             var parsedUsers = ProjectCleanupService.ParseUserList(proj.DbUsers);
-            HashSet<string>? selectedSet = null;
-            if (preselected != null && preselected.TryGetValue(proj.Id, out var list))
+
+            HashSet<string>? deleteSet = null;
+            if (preselectedToDelete != null && preselectedToDelete.TryGetValue(proj.Id, out var dList))
             {
-                selectedSet = new HashSet<string>(list, StringComparer.OrdinalIgnoreCase);
+                deleteSet = new HashSet<string>(dList, StringComparer.OrdinalIgnoreCase);
+            }
+
+            HashSet<string>? backupSet = null;
+            if (preselectedToBackup != null && preselectedToBackup.TryGetValue(proj.Id, out var bList))
+            {
+                backupSet = new HashSet<string>(bList, StringComparer.OrdinalIgnoreCase);
             }
 
             foreach (var u in parsedUsers)
             {
-                bool isSelected = selectedSet != null ? selectedSet.Contains(u) : true;
+                bool isDelete = deleteSet != null ? deleteSet.Contains(u) : true;
+                bool isBackup = backupSet != null ? backupSet.Contains(u) : defaultBackup;
+
                 var item = new UserToDeleteItem
                 {
-                    IsSelected = isSelected,
+                    IsSelected = isDelete,
+                    IsBackupSelected = isBackup,
                     UserName = u,
                     ProjectName = proj.ProjectName,
                     ProjectId = proj.Id,
@@ -93,7 +121,8 @@ public partial class SelectUsersToDeleteDialog : Window
 
     private void Item_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(UserToDeleteItem.IsSelected))
+        if (e.PropertyName == nameof(UserToDeleteItem.IsSelected) ||
+            e.PropertyName == nameof(UserToDeleteItem.IsBackupSelected))
         {
             UpdateSelectionCount();
         }
@@ -102,7 +131,8 @@ public partial class SelectUsersToDeleteDialog : Window
     private void UpdateSelectionCount()
     {
         int selected = UserItems.Count(x => x.IsSelected);
-        TxtSelectionCount.Text = $"Đã chọn: {selected} / {UserItems.Count} user";
+        int backup = UserItems.Count(x => x.IsBackupSelected);
+        TxtSelectionCount.Text = $"Xóa: {selected}/{UserItems.Count} | Sao lưu: {backup}/{UserItems.Count}";
     }
 
     private void BtnSelectAll_Click(object sender, RoutedEventArgs e)
@@ -119,6 +149,24 @@ public partial class SelectUsersToDeleteDialog : Window
         foreach (var item in UserItems)
         {
             item.IsSelected = false;
+        }
+        UpdateSelectionCount();
+    }
+
+    private void BtnBackupAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var item in UserItems)
+        {
+            item.IsBackupSelected = true;
+        }
+        UpdateSelectionCount();
+    }
+
+    private void BtnUnbackupAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var item in UserItems)
+        {
+            item.IsBackupSelected = false;
         }
         UpdateSelectionCount();
     }
@@ -175,6 +223,29 @@ public partial class SelectUsersToDeleteDialog : Window
     {
         return UserItems
             .Where(x => x.IsSelected)
+            .Select(x => x.UserName)
+            .Distinct()
+            .ToList();
+    }
+
+    /// <summary>
+    /// Lấy danh sách user được chọn sao lưu theo từng Project Id
+    /// </summary>
+    public Dictionary<string, List<string>> GetSelectedBackupUsersByProjectId()
+    {
+        return UserItems
+            .Where(x => x.IsBackupSelected)
+            .GroupBy(x => x.ProjectId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.UserName).Distinct().ToList());
+    }
+
+    /// <summary>
+    /// Lấy toàn bộ danh sách user được chọn sao lưu
+    /// </summary>
+    public List<string> GetSelectedBackupUsers()
+    {
+        return UserItems
+            .Where(x => x.IsBackupSelected)
             .Select(x => x.UserName)
             .Distinct()
             .ToList();

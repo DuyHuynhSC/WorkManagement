@@ -37,7 +37,22 @@ public class ProjectCleanupService
         "SYSTEM", "SYSAUX", "USERS", "TEMP", "UNDOTBS1", "UNDOTBS2", "EXAMPLE", "DEFAULT"
     };
 
+    private static readonly HashSet<string> SystemUsers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "SYS", "SYSTEM", "SYSAUX", "DBSNMP", "OUTLN", "AUDSYS", "APPQOSSYS",
+        "GSMADMIN_INTERNAL", "XDB", "WMSYS", "OJVMSYS", "CTXSYS", "ORDSYS",
+        "ORDDATA", "MDSYS", "LBACSYS", "DVSYS", "ANONYMOUS", "XDBPM", "XS$NULL",
+        "DIP", "FLOWS_FILES", "APEX_PUBLIC_USER"
+    };
+
     public event EventHandler<ProjectCleanupProgressEventArgs>? OnProgress;
+
+    /// <summary>
+    /// Callback hỏi người dùng khi phát hiện còn User tồn tại trong Tablespace chuẩn bị xóa.
+    /// Tham số: (tablespaceName, remainingUsers). Trả về: true nếu đồng ý xóa các user này, false nếu giữ lại và bỏ qua xóa tablespace.
+    /// </summary>
+    public Func<string, List<string>, Task<bool>>? ConfirmDeleteRemainingUsersAsync { get; set; }
+
     private readonly string _logDir;
 
     public ProjectCleanupService(string? logDir = null)
@@ -103,6 +118,7 @@ public class ProjectCleanupService
         string dbaUser,
         string dbaPassword,
         List<string>? specificUsersToDelete = null,
+        List<string>? specificUsersToBackup = null,
         CancellationToken cancellationToken = default)
     {
         string projName = string.IsNullOrWhiteSpace(project.ProjectName) ? "UnknownProject" : project.ProjectName;
@@ -131,7 +147,7 @@ public class ProjectCleanupService
                 // 1.2. Backup Database User (Export DDL / Data Pump)
                 if (settings.EnableBackupDatabase)
                 {
-                    await BackupDatabaseUsersAsync(project, dbaUser, dbaPassword, backupDir, cancellationToken);
+                    await BackupDatabaseUsersAsync(project, dbaUser, dbaPassword, backupDir, specificUsersToBackup, cancellationToken);
                 }
             }
             else
@@ -224,12 +240,22 @@ public class ProjectCleanupService
         Log($"[BACKUP-FOLDER] Đã sao lưu Source Folder thành công: {zipName} ({sizeMb:F2} MB)");
     }
 
-    private async Task BackupDatabaseUsersAsync(ProjectEntry project, string dbaUser, string dbaPassword, string backupDir, CancellationToken ct)
+    private async Task BackupDatabaseUsersAsync(
+        ProjectEntry project,
+        string dbaUser,
+        string dbaPassword,
+        string backupDir,
+        List<string>? specificUsersToBackup,
+        CancellationToken ct)
     {
-        var users = ParseUserList(project.DbUsers);
+        var allProjectUsers = ParseUserList(project.DbUsers);
+        var users = specificUsersToBackup != null
+            ? specificUsersToBackup.Intersect(allProjectUsers, StringComparer.OrdinalIgnoreCase).ToList()
+            : allProjectUsers;
+
         if (users.Count == 0)
         {
-            Log($"[BACKUP-DB] Không có DB User nào được khai báo cho dự án. Bỏ qua sao lưu DB.");
+            Log($"[BACKUP-DB] Không có DB User nào được chọn để sao lưu cho dự án. Bỏ qua sao lưu DB.");
             return;
         }
 
@@ -478,7 +504,7 @@ public class ProjectCleanupService
             foreach (var ts in tablespaces)
             {
                 ct.ThrowIfCancellationRequested();
-                await DropOracleTablespaceAsync(conn, ts, allProjectUsers, ct);
+                await DropOracleTablespaceAsync(conn, ts, ct);
             }
         }
     }
@@ -581,7 +607,7 @@ public class ProjectCleanupService
         }
     }
 
-    private async Task DropOracleTablespaceAsync(OracleConnection conn, string ts, List<string> projectUsers, CancellationToken ct)
+    private async Task DropOracleTablespaceAsync(OracleConnection conn, string ts, CancellationToken ct)
     {
         // 1. Kiểm tra an toàn: không bao giờ xóa tablespace hệ thống
         if (SystemTablespaces.Contains(ts))
@@ -607,28 +633,30 @@ public class ProjectCleanupService
             }
         }
 
-        // 3. Kiểm tra xem có User nào ngoài dự án này đang dùng tablespace này không
+        // 3. Kiểm tra xem có User nào đang gắn với tablespace này không (Default tablespace, Temp tablespace, hoặc có segments/data)
+        var remainingUsers = new List<string>();
         try
         {
             using var userCheckCmd = conn.CreateCommand();
             userCheckCmd.CommandTimeout = 30;
-            userCheckCmd.CommandText = "SELECT USERNAME FROM DBA_USERS WHERE UPPER(DEFAULT_TABLESPACE) = :ts";
+            userCheckCmd.CommandText = @"
+SELECT DISTINCT USERNAME FROM (
+    SELECT USERNAME FROM DBA_USERS WHERE UPPER(DEFAULT_TABLESPACE) = :ts OR UPPER(TEMPORARY_TABLESPACE) = :ts
+    UNION
+    SELECT OWNER AS USERNAME FROM DBA_SEGMENTS WHERE UPPER(TABLESPACE_NAME) = :ts
+)";
             userCheckCmd.Parameters.Add(new OracleParameter("ts", ts.ToUpperInvariant()));
             using var reader = await userCheckCmd.ExecuteReaderAsync(ct);
-            var remainingUsers = new List<string>();
             while (await reader.ReadAsync(ct))
             {
-                string u = reader.GetString(0);
-                if (!projectUsers.Contains(u, StringComparer.OrdinalIgnoreCase))
+                if (!reader.IsDBNull(0))
                 {
-                    remainingUsers.Add(u);
+                    string u = reader.GetString(0).Trim().ToUpperInvariant();
+                    if (!string.IsNullOrEmpty(u) && !remainingUsers.Contains(u))
+                    {
+                        remainingUsers.Add(u);
+                    }
                 }
-            }
-
-            if (remainingUsers.Count > 0)
-            {
-                Report(90, $"[DROP-TABLESPACE] CẢNH BÁO AN TOÀN: Tablespace '{ts}' vẫn đang được sử dụng bởi các user khác ({string.Join(", ", remainingUsers)}). Giữ lại tablespace để bảo toàn dữ liệu!", isError: true);
-                return;
             }
         }
         catch (OperationCanceledException)
@@ -638,6 +666,41 @@ public class ProjectCleanupService
         catch (Exception ex)
         {
             Log($"[DROP-TABLESPACE] Cảnh báo khi kiểm tra người dùng của tablespace '{ts}': {ex.Message}");
+        }
+
+        if (remainingUsers.Count > 0)
+        {
+            // Kiểm tra xem có User hệ thống không
+            var sysUsers = remainingUsers.Where(u => SystemUsers.Contains(u)).ToList();
+            if (sysUsers.Count > 0)
+            {
+                Report(90, $"[DROP-TABLESPACE] CẢNH BÁO AN TOÀN: Tablespace '{ts}' đang chứa đối tượng của User hệ thống ({string.Join(", ", sysUsers)}). Tuyệt đối không xóa!", isError: true);
+                return;
+            }
+
+            Report(90, $"[CHECK-TABLESPACE] Cảnh báo: Tablespace '{ts}' hiện vẫn còn {remainingUsers.Count} user đang tồn tại: {string.Join(", ", remainingUsers)}.");
+
+            bool shouldDeleteRemainingUsers = false;
+            if (ConfirmDeleteRemainingUsersAsync != null)
+            {
+                shouldDeleteRemainingUsers = await ConfirmDeleteRemainingUsersAsync(ts, remainingUsers);
+            }
+
+            if (!shouldDeleteRemainingUsers)
+            {
+                Report(90, $"[DROP-TABLESPACE] Đã giữ lại các user ({string.Join(", ", remainingUsers)}). BỎ QUA xóa tablespace '{ts}'!");
+                return;
+            }
+
+            // Người dùng đồng ý xóa các user này
+            Report(91, $"[DROP-TABLESPACE] Người dùng xác nhận xóa {remainingUsers.Count} user còn lại: {string.Join(", ", remainingUsers)}...");
+            await KillSessionsForUsersAsync(conn, remainingUsers, ct);
+
+            for (int i = 0; i < remainingUsers.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                await DropOracleUserAsync(conn, remainingUsers[i], i + 1, remainingUsers.Count, 91, ct);
+            }
         }
 
         // 4. Thực thi DROP TABLESPACE ... INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS
