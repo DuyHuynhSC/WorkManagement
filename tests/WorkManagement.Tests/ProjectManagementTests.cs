@@ -741,4 +741,99 @@ public class ProjectManagementTests
         service.ConfirmDeleteRemainingUsersAsync = (ts, users) => Task.FromResult(true);
         Assert.NotNull(service.ConfirmDeleteRemainingUsersAsync);
     }
+
+    [Fact]
+    public void ProjectManagerService_MoveToDeleted_And_Restore_WorkCorrectly()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "WM_Test_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            string projPath = Path.Combine(tempDir, "projects.json");
+            string delPath = Path.Combine(tempDir, "deleted_projects.json");
+
+            var service = new ProjectManagerService(projPath, delPath);
+
+            var p1 = new ProjectEntry { Id = "P1", ProjectName = "Project Alpha", DbUsers = "ALPHA_USR" };
+            var p2 = new ProjectEntry { Id = "P2", ProjectName = "Project Beta", DbUsers = "BETA_USR" };
+            service.SaveAll(new List<ProjectEntry> { p1, p2 });
+
+            // Move P1 to deleted
+            service.MoveToDeleted(new List<ProjectEntry> { p1 });
+
+            var active = service.LoadAll();
+            var deleted = service.LoadAllDeleted();
+
+            Assert.Single(active);
+            Assert.Equal("P2", active[0].Id);
+
+            Assert.Single(deleted);
+            Assert.Equal("P1", deleted[0].Id);
+
+            // Restore P1
+            service.RestoreProjects(new List<ProjectEntry> { p1 });
+
+            active = service.LoadAll();
+            deleted = service.LoadAllDeleted();
+
+            Assert.Equal(2, active.Count);
+            Assert.Contains(active, p => p.Id == "P1");
+            Assert.Empty(deleted);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public void ProjectManagerService_PermanentlyDelete_And_ClearAllDeleted_WorkCorrectly()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "WM_Test_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            string projPath = Path.Combine(tempDir, "projects.json");
+            string delPath = Path.Combine(tempDir, "deleted_projects.json");
+
+            var service = new ProjectManagerService(projPath, delPath);
+
+            var p1 = new ProjectEntry { Id = "P1", ProjectName = "Project Alpha" };
+            var p2 = new ProjectEntry { Id = "P2", ProjectName = "Project Beta" };
+            var p3 = new ProjectEntry { Id = "P3", ProjectName = "Project Gamma" };
+            service.SaveAll(new List<ProjectEntry> { p1, p2, p3 });
+
+            // Move P1 and P2 to deleted
+            service.MoveToDeleted(new List<ProjectEntry> { p1, p2 });
+
+            var deleted = service.LoadAllDeleted();
+            Assert.Equal(2, deleted.Count);
+
+            // Permanently delete P1
+            service.PermanentlyDelete(new List<ProjectEntry> { p1 });
+            deleted = service.LoadAllDeleted();
+            Assert.Single(deleted);
+            Assert.Equal("P2", deleted[0].Id);
+
+            // Clear all deleted
+            service.ClearAllDeleted();
+            deleted = service.LoadAllDeleted();
+            Assert.Empty(deleted);
+
+            // Active list remains intact
+            var active = service.LoadAll();
+            Assert.Single(active);
+            Assert.Equal("P3", active[0].Id);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
 }

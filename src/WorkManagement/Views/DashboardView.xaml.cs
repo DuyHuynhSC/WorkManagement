@@ -511,12 +511,8 @@ public partial class DashboardView : UserControl
             if (confirm != MessageBoxResult.Yes) return;
 
             var dialog = new ProjectDeleteExecutionDialog(new List<ProjectEntry> { project }, _projectService) { Owner = parent };
-            if (dialog.ShowDialog() == true || dialog.HasDeletedProjects)
-            {
-                var remaining = allProjects.Where(p => p.Id != project.Id).ToList();
-                _projectService.SaveAll(remaining);
-                LoadDashboard();
-            }
+            dialog.ShowDialog();
+            LoadDashboard();
         }
     }
 }

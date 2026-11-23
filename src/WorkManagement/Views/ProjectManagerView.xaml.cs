@@ -365,6 +365,8 @@ public partial class ProjectManagerView : UserControl
 
         if (confirm == MessageBoxResult.Yes)
         {
+            _projectService.MoveToDeleted(selectedProjects);
+
             var selectedIds = new HashSet<string>(selectedProjects.Select(x => x.Id));
             _allEntries.RemoveAll(x => selectedIds.Contains(x.Id));
 
@@ -376,7 +378,6 @@ public partial class ProjectManagerView : UserControl
                 }
             }
 
-            _projectService.SaveAll(_allEntries);
             _collectionView?.Refresh();
             UpdateSummary();
             UpdateSelectAllState();
@@ -426,25 +427,12 @@ public partial class ProjectManagerView : UserControl
         var parent = Window.GetWindow(this);
         var dialog = new ProjectDeleteExecutionDialog(projects, _projectService) { Owner = parent };
 
-        if (dialog.ShowDialog() == true || dialog.HasDeletedProjects)
-        {
-            // Xóa các dự án đã thực thi khỏi danh sách lưu trữ
-            var deletedIds = new HashSet<string>(projects.Select(x => x.Id));
-            _allEntries.RemoveAll(x => deletedIds.Contains(x.Id));
+        dialog.ShowDialog();
 
-            for (int i = _displayEntries.Count - 1; i >= 0; i--)
-            {
-                if (deletedIds.Contains(_displayEntries[i].Id))
-                {
-                    _displayEntries.RemoveAt(i);
-                }
-            }
-
-            _projectService.SaveAll(_allEntries);
-            _collectionView?.Refresh();
-            UpdateSummary();
-            UpdateSelectAllState();
-        }
+        // Giữ lại dòng trên lưới theo yêu cầu người dùng để kiểm tra lại trước khi xóa tay
+        _collectionView?.Refresh();
+        UpdateSummary();
+        UpdateSelectAllState();
     }
 
     private void BtnDeleteAll_Click(object sender, RoutedEventArgs e)
@@ -650,9 +638,9 @@ public partial class ProjectManagerView : UserControl
                 "Xác nhận xóa dòng", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (res == MessageBoxResult.Yes)
             {
+                _projectService.MoveToDeleted(new List<ProjectEntry> { entry });
                 _allEntries.Remove(entry);
                 _displayEntries.Remove(entry);
-                _projectService.SaveAll(_allEntries);
                 _collectionView?.Refresh();
                 UpdateSummary();
                 UpdateSelectAllState();

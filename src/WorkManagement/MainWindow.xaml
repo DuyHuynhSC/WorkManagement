@@ -99,6 +99,16 @@
                             </StackPanel>
                         </Button>
 
+                        <!-- NAV: DELETED PROJECT MANAGER -->
+                        <Button x:Name="NavBtnDeletedProjects" Style="{StaticResource AppNavButtonInactiveStyle}"
+                                Height="40" Margin="0,0,0,6" HorizontalContentAlignment="Left" Padding="12,0"
+                                Click="NavBtnDeletedProjects_Click" ToolTip="Quản lý và khôi phục các dự án đã xóa">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderRemoveOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="Dự Án Đã Xóa" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
                         <!-- NAV 3: TASK SCHEDULER -->
                         <Button x:Name="NavBtnScheduler" Style="{StaticResource AppNavButtonInactiveStyle}"
                                 Height="40" Margin="0,0,0,14" HorizontalContentAlignment="Left" Padding="12,0"
@@ -735,6 +745,11 @@
                 <!-- VIEW: PROJECT MANAGER -->
                 <Grid x:Name="ViewContainerProject" Visibility="Collapsed">
                     <views:ProjectManagerView x:Name="ProjectManagerControl"/>
+                </Grid>
+
+                <!-- VIEW: DELETED PROJECT MANAGER -->
+                <Grid x:Name="ViewContainerDeletedProjects" Visibility="Collapsed">
+                    <views:DeletedProjectManagerView x:Name="DeletedProjectManagerControl"/>
                 </Grid>
 
                 <!-- VIEW 3: TASK SCHEDULER -->

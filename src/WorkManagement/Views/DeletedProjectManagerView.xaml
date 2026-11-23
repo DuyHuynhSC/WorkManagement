@@ -1,0 +1,204 @@
+<UserControl x:Class="WorkManagement.Views.DeletedProjectManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1100">
+    <UserControl.Resources>
+        <ContextMenu x:Key="DeletedProjectRowContextMenu">
+            <MenuItem Header="Khôi Phục Dự Án Này" Click="MenuItemRestore_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="BackupRestore" Width="16" Height="16"
+                                             Foreground="{DynamicResource AppPrimaryButtonBackground}"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Quy Trình Xóa &amp; Dọn Dẹp" Click="MenuItemCleanup_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="Broom" Width="16" Height="16"
+                                             Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Sao Chép Đường Dẫn Source" Click="MenuItemCopyFolder_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="ContentCopy" Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Xóa Vĩnh Viễn Khỏi Thùng Rác" Click="MenuItemDeleteForever_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="DeleteForeverOutline" Width="16" Height="16"
+                                             Foreground="{DynamicResource AppDangerButtonBackground}"/>
+                </MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+    </UserControl.Resources>
+
+    <Grid Margin="12,10,12,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- TOP TOOLBAR -->
+        <Border Grid.Row="0" Style="{StaticResource AppSubtleToolbarBorderStyle}" Margin="0,0,0,10" Padding="12,10">
+            <DockPanel LastChildFill="True">
+                <!-- Search Box (Right) -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,2,0,2">
+                    <Border Background="{DynamicResource AppCardBackgroundBrush}"
+                            BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="6,2" Width="280">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Grid.Column="0"
+                                                     Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                                     VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtSearch" Grid.Column="1"
+                                     materialDesign:HintAssist.Hint="Tìm dự án, source, DB user..."
+                                     Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                     BorderThickness="0" VerticalAlignment="Center" FontSize="12"
+                                     TextChanged="TxtSearch_TextChanged"/>
+                            <Button x:Name="BtnClearSearch" Grid.Column="2" Style="{StaticResource MaterialDesignFlatButton}"
+                                    Width="20" Height="20" Padding="0" Click="BtnClearSearch_Click"
+                                    Visibility="Collapsed" Cursor="Hand" ToolTip="Xóa tìm kiếm">
+                                <materialDesign:PackIcon Kind="CloseCircle" Width="14" Height="14" Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Left Action Buttons -->
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Khôi phục đã chọn -->
+                    <Button x:Name="BtnRestoreSelected" Style="{StaticResource AppPrimaryButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnRestoreSelected_Click"
+                            ToolTip="Khôi phục các dự án đã chọn trở lại danh sách Quản Lý Dự Án">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="BackupRestore" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Khôi Phục Dự Án" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Quy trình dọn dẹp -->
+                    <Button x:Name="BtnCleanupSelected" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnCleanupSelected_Click"
+                            ToolTip="Thực hiện dọn dẹp Source Folder trên ổ mạng và User/Tablespace trên Oracle DB">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Broom" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Dọn Dẹp Source &amp; DB" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Xóa vĩnh viễn -->
+                    <Button x:Name="BtnDeleteSelectedForever" Style="{StaticResource AppDangerButtonStyle}"
+                            Height="32" Padding="12,0" Margin="0,2,8,2" Click="BtnDeleteSelectedForever_Click"
+                            ToolTip="Xóa vĩnh viễn các dòng dự án đang chọn khỏi thùng rác">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DeleteForeverOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Xóa Vĩnh Viễn" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Xóa sạch thùng rác -->
+                    <Button x:Name="BtnEmptyTrash" Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnEmptyTrash_Click"
+                            ToolTip="Xóa sạch toàn bộ dự án trong danh sách đã xóa">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DeleteSweepOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Xóa Sạch Thùng Rác" VerticalAlignment="Center" FontSize="11.5"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Làm mới -->
+                    <Button Style="{StaticResource AppOutlinedButtonStyle}"
+                            Height="32" Padding="10,0" Margin="0,2,8,2" Click="BtnRefresh_Click"
+                            ToolTip="Tải lại danh sách dự án đã xóa">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Làm Mới" VerticalAlignment="Center" FontSize="11.5"/>
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- CENTER: DATAGRID -->
+        <materialDesign:Card Grid.Row="1" Style="{StaticResource AppCardStyle}" Padding="0">
+            <DataGrid x:Name="GridDeletedProjects" AutoGenerateColumns="False" CanUserAddRows="False"
+                      HeadersVisibility="Column" SelectionUnit="FullRow"
+                      GridLinesVisibility="Horizontal"
+                      materialDesign:DataGridAssist.CellPadding="8,6"
+                      materialDesign:DataGridAssist.ColumnHeaderPadding="8,6"
+                      BorderThickness="0"
+                      ContextMenu="{StaticResource DeletedProjectRowContextMenu}">
+                <DataGrid.Columns>
+                    <!-- Checkbox Column -->
+                    <DataGridTemplateColumn Width="50" CanUserResize="False">
+                        <DataGridTemplateColumn.Header>
+                            <CheckBox x:Name="ChkSelectAll" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Click="ChkSelectAll_Click" Cursor="Hand"/>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Click="RowCheckBox_Click" Cursor="Hand"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- No (Mã số) -->
+                    <DataGridTextColumn Header="STT / No" Binding="{Binding No}" Width="80" FontWeight="SemiBold"/>
+
+                    <!-- Tên dự án -->
+                    <DataGridTextColumn Header="Tên Dự Án" Binding="{Binding ProjectName}" Width="160" FontWeight="Bold"/>
+
+                    <!-- Source Folder -->
+                    <DataGridTextColumn Header="Source Folder" Binding="{Binding SourceFolder}" Width="220" FontFamily="Consolas" FontSize="11.5"/>
+
+                    <!-- Máy chủ DB -->
+                    <DataGridTextColumn Header="Host Server" Binding="{Binding HostServer}" Width="140" FontFamily="Consolas"/>
+
+                    <!-- Port / Service -->
+                    <DataGridTextColumn Header="Port" Binding="{Binding Port}" Width="65" FontFamily="Consolas"/>
+                    <DataGridTextColumn Header="Service Name" Binding="{Binding ServiceName}" Width="110" FontFamily="Consolas"/>
+
+                    <!-- Oracle Users -->
+                    <DataGridTextColumn Header="DB Users" Binding="{Binding DbUsers}" Width="160" FontFamily="Consolas"/>
+
+                    <!-- Tablespace -->
+                    <DataGridTextColumn Header="Tablespace" Binding="{Binding Tablespace}" Width="130" FontFamily="Consolas"/>
+
+                    <!-- Người phụ trách -->
+                    <DataGridTextColumn Header="Người Phụ Trách" Binding="{Binding PersonInCharge}" Width="130"/>
+
+                    <!-- Tester -->
+                    <DataGridTextColumn Header="Tester" Binding="{Binding Tester}" Width="110"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </materialDesign:Card>
+
+        <!-- BOTTOM STATUS BAR -->
+        <Border Grid.Row="2" Style="{StaticResource AppSubtleToolbarBorderStyle}" Margin="0,8,0,0" Padding="12,8">
+            <DockPanel LastChildFill="True">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="FolderRemoveOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"
+                                             Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                    <TextBlock x:Name="TxtSummary" Text="Tổng số: 0 dự án đã xóa | Đã chọn: 0 dự án"
+                               FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AppPrimaryTextBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Text="Nhấp chuột phải vào dòng để chọn Khôi phục, Dọn dẹp hoặc Xóa vĩnh viễn"
+                           FontSize="11" Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -100,6 +100,11 @@ public partial class MainWindow : Window
         BackupFolderConfigViewControl.Initialize(_configService, _logger);
         BackupFolderConfigViewControl.SettingsSaved += BackupFolderConfigViewControl_SettingsSaved;
 
+        DeletedProjectManagerControl.ProjectsRestored += (_, _) =>
+        {
+            ProjectManagerControl.LoadData();
+        };
+
         DashboardViewControl.OpenCommandPaletteRequested += (_, _) => OpenCommandPalette();
         DashboardViewControl.OpenBackupFolderSettingsRequested += (_, _) => SwitchToView(AppNavView.BackupFolderConfig);
 
@@ -1412,6 +1417,7 @@ public partial class MainWindow : Window
         FtpCleaner,
         VmManager,
         ProjectManager,
+        DeletedProjectManager,
         TaskScheduler,
         FtpConfig,
         EmailConfig,
@@ -1439,6 +1445,11 @@ public partial class MainWindow : Window
         SwitchToView(AppNavView.ProjectManager);
     }
 
+    private void NavBtnDeletedProjects_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchToView(AppNavView.DeletedProjectManager);
+    }
+
     private void NavBtnScheduler_Click(object sender, RoutedEventArgs e)
     {
         SwitchToView(AppNavView.TaskScheduler);
@@ -1451,6 +1462,8 @@ public partial class MainWindow : Window
         ViewContainerFtp.Visibility = targetView == AppNavView.FtpCleaner ? Visibility.Visible : Visibility.Collapsed;
         ViewContainerVm.Visibility = targetView == AppNavView.VmManager ? Visibility.Visible : Visibility.Collapsed;
         ViewContainerProject.Visibility = targetView == AppNavView.ProjectManager ? Visibility.Visible : Visibility.Collapsed;
+        if (ViewContainerDeletedProjects != null)
+            ViewContainerDeletedProjects.Visibility = targetView == AppNavView.DeletedProjectManager ? Visibility.Visible : Visibility.Collapsed;
         ViewContainerScheduler.Visibility = targetView == AppNavView.TaskScheduler ? Visibility.Visible : Visibility.Collapsed;
         ViewContainerFtpConfig.Visibility = targetView == AppNavView.FtpConfig ? Visibility.Visible : Visibility.Collapsed;
         ViewContainerEmailConfig.Visibility = targetView == AppNavView.EmailConfig ? Visibility.Visible : Visibility.Collapsed;
@@ -1464,6 +1477,7 @@ public partial class MainWindow : Window
         NavBtnFtp.Style = (Style)FindResource(targetView == AppNavView.FtpCleaner ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         NavBtnVm.Style = (Style)FindResource(targetView == AppNavView.VmManager ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         if (NavBtnProject != null) NavBtnProject.Style = (Style)FindResource(targetView == AppNavView.ProjectManager ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
+        if (NavBtnDeletedProjects != null) NavBtnDeletedProjects.Style = (Style)FindResource(targetView == AppNavView.DeletedProjectManager ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         NavBtnScheduler.Style = (Style)FindResource(targetView == AppNavView.TaskScheduler ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         BtnOpenConnectionSettings.Style = (Style)FindResource(targetView == AppNavView.FtpConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
         BtnEmailSettings.Style = (Style)FindResource(targetView == AppNavView.EmailConfig ? "AppNavButtonActiveStyle" : "AppNavButtonInactiveStyle");
@@ -1499,6 +1513,13 @@ public partial class MainWindow : Window
                 TxtCurrentPageSub.Text = "Quản lý thông tin source folder, kết nối Oracle DB, tự động backup và xóa tuần tự";
                 IconCurrentPage.Kind = MaterialDesignThemes.Wpf.PackIconKind.FolderCogOutline;
                 ProjectManagerControl.LoadData();
+                break;
+
+            case AppNavView.DeletedProjectManager:
+                TxtCurrentPageTitle.Text = "Quản Lý Dự Án Đã Xóa (Thùng Rác Dự Án)";
+                TxtCurrentPageSub.Text = "Xem, khôi phục hoặc xóa vĩnh viễn các dự án đã xóa khỏi hệ thống";
+                IconCurrentPage.Kind = MaterialDesignThemes.Wpf.PackIconKind.FolderRemoveOutline;
+                DeletedProjectManagerControl?.LoadData();
                 break;
 
             case AppNavView.TaskScheduler:
@@ -1754,6 +1775,15 @@ public partial class MainWindow : Window
                 IconKind = PackIconKind.FolderCogOutline,
                 SearchKeywords = "project du an oracle database tablespace",
                 ExecuteAction = () => NavigateAndRestore(AppNavView.ProjectManager)
+            },
+            new()
+            {
+                Title = "Mở Quản Lý Dự Án Đã Xóa (Thùng Rác Dự Án)",
+                Subtitle = "Xem, khôi phục hoặc xóa vĩnh viễn các dự án đã chuyển vào thùng rác",
+                CategoryBadge = "ĐIỀU HƯỚNG",
+                IconKind = PackIconKind.FolderRemoveOutline,
+                SearchKeywords = "deleted project thung rac du an da xoa khoi phuc",
+                ExecuteAction = () => NavigateAndRestore(AppNavView.DeletedProjectManager)
             },
             new()
             {
