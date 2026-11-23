@@ -601,4 +601,54 @@ public class ProjectManagementTests
         Assert.False(item.IsSelected);
         Assert.True(propertyChangedRaised);
     }
+
+    [Fact]
+    public void ProjectDeleteExecutionDialog_InitializesWithoutCrashing()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                WpfTestHelper.EnsureApplication();
+
+                var projects = new List<ProjectEntry>
+                {
+                    new()
+                    {
+                        Id = "p-1",
+                        No = "101",
+                        ProjectName = "ESCO",
+                        HostServer = "192.168.1.1",
+                        Port = "1521",
+                        ServiceName = "ORCL",
+                        DbUsers = "ESC_RPS, ESC_USR1",
+                        Tablespace = "TS_ESCO"
+                    }
+                };
+
+                string tempConfig = Path.Combine(Path.GetTempPath(), $"wm_dialog_test_{Guid.NewGuid():N}.json");
+                try
+                {
+                    var projService = new ProjectManagerService(tempConfig);
+                    var dialog = new ProjectDeleteExecutionDialog(projects, projService);
+                    Assert.NotNull(dialog);
+                }
+                finally
+                {
+                    if (File.Exists(tempConfig)) File.Delete(tempConfig);
+                }
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join(10000);
+
+        Assert.Null(threadEx);
+    }
 }

@@ -16,6 +16,14 @@ public partial class App : Application
 
         var configService = new ConfigService();
         var logger = new AppLogger();
+
+        DispatcherUnhandledException += (sender, args) =>
+        {
+            logger.Error($"Lỗi ngoại lệ giao diện chưa xử lý (Unhandled): {args.Exception}");
+            MessageBox.Show($"Đã xảy ra lỗi: {args.Exception.Message}\n\nChi tiết đã được ghi vào file log.", "Lỗi Ứng Dụng", MessageBoxButton.OK, MessageBoxImage.Error);
+            args.Handled = true;
+        };
+
         var ftpService = new FtpCleanupService(logger);
         var emailService = new EmailNotificationService(logger);
         var cliOptions = CliOptions.Parse(e.Args);

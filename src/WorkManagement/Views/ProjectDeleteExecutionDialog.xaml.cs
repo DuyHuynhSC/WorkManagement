@@ -26,11 +26,12 @@ public partial class ProjectDeleteExecutionDialog : Window
 
     public ProjectDeleteExecutionDialog(List<ProjectEntry> projects, ProjectManagerService projectService)
     {
-        InitializeComponent();
-        _projectsToDelete = projects;
+        _projectsToDelete = projects ?? new List<ProjectEntry>();
         _projectService = projectService;
         _cleanupService = new ProjectCleanupService();
         _settings = _projectService.LoadSettings();
+
+        InitializeComponent();
 
         _cleanupService.OnProgress += CleanupService_OnProgress;
 
@@ -69,6 +70,11 @@ public partial class ProjectDeleteExecutionDialog : Window
 
     private void UpdateSelectedUsersBadge()
     {
+        if (TxtSelectedUsersBadge == null || BtnSelectUsers == null || ChkDeleteUsers == null || _projectsToDelete == null)
+        {
+            return;
+        }
+
         int totalUsers = _projectsToDelete.Sum(p => ProjectCleanupService.ParseUserList(p.DbUsers).Count);
         int selectedUsers = _selectedUsersByProjectId != null
             ? _selectedUsersByProjectId.Values.Sum(list => list.Count)
@@ -78,7 +84,7 @@ public partial class ProjectDeleteExecutionDialog : Window
         BtnSelectUsers.IsEnabled = ChkDeleteUsers.IsChecked == true && totalUsers > 0;
     }
 
-    private void ChkDeleteUsers_CheckedChanged(object sender, RoutedEventArgs e)
+    private void ChkDeleteUsers_Click(object sender, RoutedEventArgs e)
     {
         UpdateSelectedUsersBadge();
     }
