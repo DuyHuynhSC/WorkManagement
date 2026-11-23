@@ -92,10 +92,10 @@ class Program
         {
             double s = size;
 
-            // 1. NỀN CHÍNH: Bo góc Squircle với Gradient sang trọng
+            // 1. NỀN CHÍNH: Bo góc Squircle với Gradient sang trọng tông Vàng/Cam
             var bgBrush = new LinearGradientBrush(
-                Color.FromRgb(0x0F, 0x17, 0x2A), // Slate 900
-                Color.FromRgb(0x1E, 0x40, 0xAF), // Blue 800
+                Color.FromRgb(0x1A, 0x11, 0x0A), // Dark Warm Amber Charcoal
+                Color.FromRgb(0x8A, 0x30, 0x06), // Rich Amber Orange 800
                 new Point(0, 0),
                 new Point(1, 1));
 
@@ -104,17 +104,17 @@ class Program
             double radius = s * 0.22;
             var bgRect = new Rect(pad, pad, bgSize, bgSize);
 
-            // Viền ngoài phản quang sáng nhẹ
+            // Viền ngoài phản quang sáng nhẹ ánh kim vàng/cam
             var borderPen = new Pen(new LinearGradientBrush(
-                Color.FromArgb(160, 0x38, 0xBD, 0xF8), // Light Cyan
-                Color.FromArgb(60, 0x1E, 0x3A, 0x8A),
+                Color.FromArgb(180, 0xFB, 0xBF, 0x24), // Amber 400 Light Gold
+                Color.FromArgb(70, 0x9A, 0x34, 0x12),  // Deep Amber Orange
                 new Point(0, 0), new Point(1, 1)), s * 0.015);
 
             dc.DrawRoundedRectangle(bgBrush, borderPen, bgRect, radius, radius);
 
-            // Vòng sáng nhẹ bên trong (Inner Glow)
+            // Vòng sáng nhẹ bên trong (Inner Glow) màu vàng hổ phách
             var innerGlowBrush = new LinearGradientBrush(
-                Color.FromArgb(50, 0x60, 0xA5, 0xFA),
+                Color.FromArgb(50, 0xFB, 0xBF, 0x24),
                 Colors.Transparent,
                 new Point(0.5, 0), new Point(0.5, 0.6));
             dc.DrawRoundedRectangle(innerGlowBrush, null,
@@ -127,9 +127,8 @@ class Program
             double monH = s * 0.48;
             double monRadius = s * 0.05;
 
-            var monBg = new SolidColorBrush(Color.FromRgb(0x02, 0x84, 0xC7)); // Sky 600
-            var monPen = new Pen(new SolidColorBrush(Color.FromRgb(0xBA, 0xE6, 0xFD)), s * 0.015);
-            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x0C, 0x4A, 0x6E)), monPen,
+            var monPen = new Pen(new SolidColorBrush(Color.FromRgb(0xFD, 0xBA, 0x74)), s * 0.015); // Light Orange 300
+            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x45, 0x1A, 0x03)), monPen, // Dark Amber Bronze
                 new Rect(monX, monY, monW, monH), monRadius, monRadius);
 
             // Màn hình trong
@@ -137,42 +136,42 @@ class Program
             double scrY = monY + s * 0.07;
             double scrW = monW - s * 0.06;
             double scrH = monH - s * 0.10;
-            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x0F, 0x17, 0x2A)), null,
+            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x14, 0x10, 0x0E)), null,
                 new Rect(scrX, scrY, scrW, scrH), s * 0.02, s * 0.02);
 
             // 3 chấm tròn indicator trên thanh tiêu đề monitor
             dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)), null, new Point(monX + s * 0.05, monY + s * 0.035), s * 0.012, s * 0.012);
             dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B)), null, new Point(monX + s * 0.08, monY + s * 0.035), s * 0.012, s * 0.012);
-            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0x10, 0xB9, 0x81)), null, new Point(monX + s * 0.11, monY + s * 0.035), s * 0.012, s * 0.012);
+            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0xFB, 0x92, 0x3C)), null, new Point(monX + s * 0.11, monY + s * 0.035), s * 0.012, s * 0.012);
 
-            // Nội dung bên trong màn hình: Các thanh server & data flow
-            var linePen1 = new Pen(new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8)), s * 0.015);
+            // Nội dung bên trong màn hình: Các thanh server & data flow tông vàng/cam
+            var linePen1 = new Pen(new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24)), s * 0.015); // Amber Gold
             dc.DrawLine(linePen1, new Point(scrX + s * 0.04, scrY + s * 0.06), new Point(scrX + scrW - s * 0.04, scrY + s * 0.06));
 
-            var linePen2 = new Pen(new SolidColorBrush(Color.FromRgb(0x60, 0xA5, 0xFA)), s * 0.015);
+            var linePen2 = new Pen(new SolidColorBrush(Color.FromRgb(0xFB, 0x92, 0x3C)), s * 0.015); // Warm Orange
             dc.DrawLine(linePen2, new Point(scrX + s * 0.04, scrY + s * 0.13), new Point(scrX + scrW * 0.65, scrY + s * 0.13));
 
-            var linePen3 = new Pen(new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99)), s * 0.015);
+            var linePen3 = new Pen(new SolidColorBrush(Color.FromRgb(0xFD, 0xE0, 0x47)), s * 0.015); // Yellow Bright
             dc.DrawLine(linePen3, new Point(scrX + s * 0.04, scrY + s * 0.20), new Point(scrX + scrW * 0.80, scrY + s * 0.20));
 
             // Biểu tượng Server Nodes (2 máy chủ kết nối)
             double srvW = s * 0.12;
             double srvH = s * 0.05;
-            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x1E, 0x29, 0x3B)), new Pen(new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8)), 1.5),
+            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x29, 0x1E, 0x17)), new Pen(new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24)), 1.5),
                 new Rect(scrX + s * 0.04, scrY + s * 0.26, srvW, srvH), 2, 2);
-            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x1E, 0x29, 0x3B)), new Pen(new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99)), 1.5),
+            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromRgb(0x29, 0x1E, 0x17)), new Pen(new SolidColorBrush(Color.FromRgb(0xF9, 0x73, 0x16)), 1.5),
                 new Rect(scrX + s * 0.26, scrY + s * 0.26, srvW, srvH), 2, 2);
 
             // Đèn server
-            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8)), null, new Point(scrX + s * 0.06, scrY + s * 0.285), 2.5, 2.5);
-            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99)), null, new Point(scrX + s * 0.28, scrY + s * 0.285), 2.5, 2.5);
+            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24)), null, new Point(scrX + s * 0.06, scrY + s * 0.285), 2.5, 2.5);
+            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0xF9, 0x73, 0x16)), null, new Point(scrX + s * 0.28, scrY + s * 0.285), 2.5, 2.5);
 
             // Đường nối kết nối giữa 2 server node
-            var connPen = new Pen(new SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xF0)), s * 0.008);
+            var connPen = new Pen(new SolidColorBrush(Color.FromRgb(0xFE, 0xF3, 0xC7)), s * 0.008);
             dc.DrawLine(connPen, new Point(scrX + s * 0.16, scrY + s * 0.285), new Point(scrX + s * 0.26, scrY + s * 0.285));
 
             // Chân đế Monitor
-            var standBrush = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B));
+            var standBrush = new SolidColorBrush(Color.FromRgb(0x78, 0x71, 0x6C)); // Warm Stone
             dc.DrawRectangle(standBrush, null, new Rect(s * 0.46, monY + monH, s * 0.08, s * 0.06));
             dc.DrawRoundedRectangle(standBrush, null, new Rect(s * 0.38, monY + monH + s * 0.05, s * 0.24, s * 0.025), 3, 3);
 
@@ -183,15 +182,15 @@ class Program
             double badgeR = s * 0.18;
 
             // Đổ bóng huy hiệu
-            var shadowBrush = new SolidColorBrush(Color.FromArgb(120, 0x02, 0x2C, 0x22));
+            var shadowBrush = new SolidColorBrush(Color.FromArgb(120, 0x43, 0x14, 0x07));
             dc.DrawEllipse(shadowBrush, null, new Point(badgeCenterX + s * 0.015, badgeCenterY + s * 0.02), badgeR, badgeR);
 
-            // Vòng tròn huy hiệu xanh ngọc Emerald Gradient
+            // Vòng tròn huy hiệu tông Vàng - Cam rực rỡ Gradient
             var badgeGrad = new LinearGradientBrush(
-                Color.FromRgb(0x10, 0xB9, 0x81), // Emerald 500
-                Color.FromRgb(0x04, 0x78, 0x57), // Emerald 700
+                Color.FromRgb(0xFB, 0xBF, 0x24), // Amber 400 Light Gold
+                Color.FromRgb(0xEA, 0x58, 0x0C), // Orange 600 Rich Fire Orange
                 new Point(0, 0), new Point(1, 1));
-            var badgePen = new Pen(new SolidColorBrush(Color.FromRgb(0xA7, 0xF3, 0xD0)), s * 0.02);
+            var badgePen = new Pen(new SolidColorBrush(Color.FromRgb(0xFE, 0xF0, 0x8A)), s * 0.02); // Yellow 200 Bright
             dc.DrawEllipse(badgeGrad, badgePen, new Point(badgeCenterX, badgeCenterY), badgeR, badgeR);
 
             // Biểu tượng tam giác Play màu trắng sắc nét ở giữa huy hiệu
