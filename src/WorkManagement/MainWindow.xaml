@@ -424,7 +424,9 @@
                                                     <materialDesign:PackIcon Kind="ServerNetwork" Width="17" Height="17" VerticalAlignment="Center"
                                                                              Foreground="{DynamicResource AppSectionIconBrush}" Margin="0,0,6,0"/>
                                                     <TextBlock Text="Site Profile:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12"/>
-                                                    <ComboBox x:Name="CboProfiles" Width="170" IsEditable="True"
+                                                    <ComboBox x:Name="CboProfiles" Width="170" IsEditable="False"
+                                                              DisplayMemberPath="Name" SelectedValuePath="Name"
+                                                              KeyboardNavigation.IsTabStop="False"
                                                               VerticalContentAlignment="Center"
                                                               materialDesign:HintAssist.Hint="Chọn Site Profile..."
                                                               SelectionChanged="CboProfiles_SelectionChanged"
@@ -519,6 +521,15 @@
                                                     </StackPanel>
                                                 </Button>
 
+                                                <Button x:Name="BtnFmReveal" Style="{StaticResource AppOutlinedButtonStyle}"
+                                                        Height="32" Padding="12,0" Margin="0,0,6,0" Click="BtnFmReveal_Click"
+                                                        ToolTip="Mở thư mục chứa file vừa tải về trên máy tính (Reveal in File Explorer)">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                        <TextBlock Text="Reveal" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+
                                                 <Button x:Name="BtnFmView" Style="{StaticResource AppOutlinedButtonStyle}"
                                                         Height="32" Padding="12,0" Margin="0,0,6,0" Click="BtnFmView_Click"
                                                         ToolTip="Xem nội dung file (hỗ trợ file văn bản, code, log, ảnh hoặc mở bằng app mặc định)">
@@ -597,6 +608,11 @@
                                                 <MenuItem Header="Tải Về Máy Tính (Download)" Click="CtxFmDownload_Click">
                                                     <MenuItem.Icon>
                                                         <materialDesign:PackIcon Kind="DownloadOutline" Width="16" Height="16"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Mở Thư Mục Vừa Tải (Reveal)" Click="BtnFmReveal_Click">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="FolderOpenOutline" Width="16" Height="16"/>
                                                     </MenuItem.Icon>
                                                 </MenuItem>
                                                 <MenuItem Header="Đổi Tên (Rename)..." Click="CtxFmRename_Click">

@@ -336,9 +336,9 @@
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
 
-                    <!-- PROJECT NAME -->
-                    <DataGridTextColumn Binding="{Binding ProjectName}" Width="Auto" MinWidth="130" FontWeight="Bold">
-                        <DataGridTextColumn.Header>
+                    <!-- PROJECT NAME (WITH INFO BUTTON FOR GIẢI THÍCH THÊM & GHI CHÚ) -->
+                    <DataGridTemplateColumn Width="Auto" MinWidth="150" SortMemberPath="ProjectName">
+                        <DataGridTemplateColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_ProjectName" Style="{StaticResource MaterialDesignFlatButton}"
                                         DockPanel.Dock="Right" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
@@ -348,11 +348,38 @@
                                 </Button>
                                 <TextBlock Text="Project" VerticalAlignment="Center"/>
                             </DockPanel>
-                        </DataGridTextColumn.Header>
-                    </DataGridTextColumn>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <DockPanel LastChildFill="True">
+                                    <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                            DockPanel.Dock="Left" Width="22" Height="22" Padding="0" Margin="0,0,6,0"
+                                            VerticalAlignment="Center" Cursor="Hand"
+                                            Click="BtnProjectInfo_Click"
+                                            ToolTip="Xem Giải thích thêm &amp; Ghi chú">
+                                        <materialDesign:PackIcon Kind="InformationOutline" Width="15" Height="15">
+                                            <materialDesign:PackIcon.Style>
+                                                <Style TargetType="materialDesign:PackIcon">
+                                                    <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}"/>
+                                                    <Setter Property="Opacity" Value="0.45"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasAdditionalInfo}" Value="True">
+                                                            <Setter Property="Foreground" Value="{DynamicResource AppPrimaryButtonBackground}"/>
+                                                            <Setter Property="Opacity" Value="1"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </materialDesign:PackIcon.Style>
+                                        </materialDesign:PackIcon>
+                                    </Button>
+                                    <TextBlock Text="{Binding ProjectName}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                </DockPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                    <!-- GIẢI THÍCH THÊM -->
-                    <DataGridTextColumn Binding="{Binding Description}" Width="Auto" MinWidth="140">
+                    <!-- GIẢI THÍCH THÊM (ẨN TRÊN GRID, XEM QUA NÚT INFO TẠI CỘT PROJECT) -->
+                    <DataGridTextColumn Binding="{Binding Description}" Width="Auto" MinWidth="140" Visibility="Collapsed">
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_Description" Style="{StaticResource MaterialDesignFlatButton}"
@@ -444,8 +471,8 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- DBA USER (HIỂN THỊ THÔNG QUA IP MÁY ẢO) -->
-                    <DataGridTextColumn Binding="{Binding ResolvedDbaUser}" Width="Auto" MinWidth="110" FontWeight="SemiBold">
+                    <!-- DBA USER (HIỂN THỊ THÔNG QUA IP MÁY ẢO - ẨN TRÊN GRID, THAM KHẢO TẠI HOST SERVER) -->
+                    <DataGridTextColumn Binding="{Binding ResolvedDbaUser}" Width="Auto" MinWidth="110" FontWeight="SemiBold" Visibility="Collapsed">
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_DbaUser" Style="{StaticResource MaterialDesignFlatButton}"
@@ -459,8 +486,8 @@
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
 
-                    <!-- DBA PASSWORD (HIỂN THỊ THÔNG QUA IP MÁY ẢO) -->
-                    <DataGridTemplateColumn Width="Auto" MinWidth="140" Header="Password (DBA)">
+                    <!-- DBA PASSWORD (HIỂN THỊ THÔNG QUA IP MÁY ẢO - ẨN TRÊN GRID, THAM KHẢO TẠI HOST SERVER) -->
+                    <DataGridTemplateColumn Width="Auto" MinWidth="140" Header="Password (DBA)" Visibility="Collapsed">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <DockPanel LastChildFill="True">
@@ -495,8 +522,8 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- SERVICE NAME -->
-                    <DataGridTextColumn Binding="{Binding ServiceName}" Width="Auto" MinWidth="105">
+                    <!-- SERVICE NAME (ẨN TRÊN GRID, THAM KHẢO TẠI HOST SERVER) -->
+                    <DataGridTextColumn Binding="{Binding ServiceName}" Width="Auto" MinWidth="105" Visibility="Collapsed">
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_ServiceName" Style="{StaticResource MaterialDesignFlatButton}"
@@ -510,15 +537,15 @@
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
 
-                    <!-- PORT -->
-                    <DataGridTextColumn Binding="{Binding Port}" Width="Auto" MinWidth="75">
+                    <!-- PORT (ẨN TRÊN GRID, THAM KHẢO TẠI HOST SERVER) -->
+                    <DataGridTextColumn Binding="{Binding Port}" Width="Auto" MinWidth="75" Visibility="Collapsed">
                         <DataGridTextColumn.Header>
                             <TextBlock Text="Port" VerticalAlignment="Center"/>
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
 
-                    <!-- TNSNAME -->
-                    <DataGridTextColumn Binding="{Binding TnsName}" Width="Auto" MinWidth="110">
+                    <!-- TNSNAME (ẨN TRÊN GRID, THAM KHẢO TẠI HOST SERVER) -->
+                    <DataGridTextColumn Binding="{Binding TnsName}" Width="Auto" MinWidth="110" Visibility="Collapsed">
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_TnsName" Style="{StaticResource MaterialDesignFlatButton}"
@@ -576,8 +603,8 @@
                         </DataGridTextColumn.Header>
                     </DataGridTextColumn>
 
-                    <!-- GHI CHÚ -->
-                    <DataGridTextColumn Binding="{Binding Notes}" Width="Auto" MinWidth="150">
+                    <!-- GHI CHÚ (ẨN TRÊN GRID, XEM QUA NÚT INFO TẠI CỘT PROJECT) -->
+                    <DataGridTextColumn Binding="{Binding Notes}" Width="Auto" MinWidth="150" Visibility="Collapsed">
                         <DataGridTextColumn.Header>
                             <DockPanel LastChildFill="True">
                                 <Button x:Name="BtnFilter_Notes" Style="{StaticResource MaterialDesignFlatButton}"
@@ -740,6 +767,101 @@
                                     Content="Áp Dụng" Click="BtnApplyFilter_Click"/>
                         </StackPanel>
                     </DockPanel>
+                </Grid>
+            </materialDesign:Card>
+        </Popup>
+
+        <!-- PROJECT INFO POPUP (GIẢI THÍCH THÊM & GHI CHÚ) -->
+        <Popup x:Name="ProjectInfoPopup" StaysOpen="False" AllowsTransparency="True"
+               PopupAnimation="Fade" Placement="Bottom">
+            <materialDesign:Card Margin="6" Padding="12" Width="380" MaxHeight="440"
+                                 Background="{DynamicResource AppCardBackgroundBrush}"
+                                 BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                                 BorderThickness="1"
+                                 materialDesign:ElevationAssist.Elevation="Dp6">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                Width="24" Height="24" Padding="0" Click="BtnCloseInfoPopup_Click"
+                                ToolTip="Đóng">
+                            <materialDesign:PackIcon Kind="Close" Width="14" Height="14"
+                                                     Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                        </Button>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="InformationOutline" Width="16" Height="16"
+                                                     Foreground="{DynamicResource AppPrimaryButtonBackground}"
+                                                     VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock x:Name="TxtInfoProjectTitle" Text="Thông tin dự án" FontWeight="Bold"
+                                       FontSize="13" Foreground="{DynamicResource AppPrimaryTextBrush}"
+                                       TextTrimming="CharacterEllipsis" MaxWidth="290" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Content -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="310">
+                        <StackPanel>
+                            <!-- Giải thích thêm -->
+                            <TextBlock Text="GIẢI THÍCH THÊM" FontSize="10.5" FontWeight="Bold"
+                                       Foreground="{DynamicResource AppSecondaryTextBrush}" Margin="0,0,0,4"/>
+                            <Border Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
+                                    BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                                    BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
+                                <TextBox x:Name="TxtInfoDescription" Style="{x:Null}"
+                                         IsReadOnly="True" BorderThickness="0" Background="Transparent"
+                                         TextWrapping="Wrap" FontSize="12" Padding="0"
+                                         Foreground="{DynamicResource AppPrimaryTextBrush}"/>
+                            </Border>
+
+                            <!-- Ghi chú -->
+                            <TextBlock Text="GHI CHÚ" FontSize="10.5" FontWeight="Bold"
+                                       Foreground="{DynamicResource AppSecondaryTextBrush}" Margin="0,0,0,4"/>
+                            <Border Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
+                                    BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                                    BorderThickness="1" CornerRadius="6" Padding="10,8">
+                                <TextBox x:Name="TxtInfoNotes" Style="{x:Null}"
+                                         IsReadOnly="True" BorderThickness="0" Background="Transparent"
+                                         TextWrapping="Wrap" FontSize="12" Padding="0"
+                                         Foreground="{DynamicResource AppPrimaryTextBrush}"/>
+                            </Border>
+
+                            <!-- Ghi chú 2 (chỉ hiển thị nếu có dữ liệu) -->
+                            <StackPanel x:Name="PanelInfoNotes2" Visibility="Collapsed" Margin="0,10,0,0">
+                                <TextBlock Text="GHI CHÚ 2" FontSize="10.5" FontWeight="Bold"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}" Margin="0,0,0,4"/>
+                                <Border Background="{DynamicResource AppSubtlePanelBackgroundBrush}"
+                                        BorderBrush="{DynamicResource AppSubtlePanelBorderBrush}"
+                                        BorderThickness="1" CornerRadius="6" Padding="10,8">
+                                    <TextBox x:Name="TxtInfoNotes2" Style="{x:Null}"
+                                             IsReadOnly="True" BorderThickness="0" Background="Transparent"
+                                             TextWrapping="Wrap" FontSize="12" Padding="0"
+                                             Foreground="{DynamicResource AppPrimaryTextBrush}"/>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Footer -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                        <Button Style="{StaticResource AppOutlinedButtonStyle}"
+                                Height="26" Padding="10,0" Margin="0,0,6,0" FontSize="11"
+                                Click="BtnEditFromInfoPopup_Click" ToolTip="Mở hộp thoại chỉnh sửa dự án này">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="PencilOutline" Width="13" Height="13" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock Text="Chỉnh sửa" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource AppPrimaryButtonStyle}"
+                                Height="26" Padding="12,0" FontSize="11"
+                                Content="Đóng" Click="BtnCloseInfoPopup_Click"/>
+                    </StackPanel>
                 </Grid>
             </materialDesign:Card>
         </Popup>
