@@ -836,4 +836,42 @@ public class ProjectManagementTests
             }
         }
     }
+
+    [Theory]
+    [InlineData(null, "")]
+    [InlineData("", "")]
+    [InlineData("   ", "")]
+    [InlineData("D:/app/oracle/oradata/ORCL/TS_TEST.DBF", @"D:\app\oracle\oradata\ORCL\TS_TEST.DBF")]
+    [InlineData(@"  C:\oracle\data\test.dbf  ", @"C:\oracle\data\test.dbf")]
+    public void ProjectCleanupService_NormalizeDatafilePath_NormalizesCorrectly(string? input, string expected)
+    {
+        string result = ProjectCleanupService.NormalizeDatafilePath(input);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task ProjectCleanupService_CleanUpPhysicalDatafileAsync_DeletesLocalFileSuccessfully()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "WM_DatafileTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            string tempFile = Path.Combine(tempDir, "TEST_TS.DBF");
+            File.WriteAllText(tempFile, "fake datafile content");
+            Assert.True(File.Exists(tempFile));
+
+            var service = new ProjectCleanupService();
+            // Truyền conn null vì nhánh 1 xóa local file trước khi đụng vào conn
+            await service.CleanUpPhysicalDatafileAsync(null!, tempFile, System.Threading.CancellationToken.None);
+
+            Assert.False(File.Exists(tempFile));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
 }

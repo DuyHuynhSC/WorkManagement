@@ -607,6 +607,12 @@ public class ProjectCleanupService
         }
     }
 
+    public static string NormalizeDatafilePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+        return path.Trim().Replace('/', '\\');
+    }
+
     private async Task DropOracleTablespaceAsync(OracleConnection conn, string ts, CancellationToken ct)
     {
         // 1. Kiểm tra an toàn: không bao giờ xóa tablespace hệ thống
@@ -633,7 +639,44 @@ public class ProjectCleanupService
             }
         }
 
-        // 3. Kiểm tra xem có User nào đang gắn với tablespace này không (Default tablespace, Temp tablespace, hoặc có segments/data)
+        // 3. Thu thập danh sách datafiles vật lý trên đĩa trước khi xóa
+        var datafiles = new List<string>();
+        try
+        {
+            using var fileCmd = conn.CreateCommand();
+            fileCmd.CommandTimeout = 30;
+            fileCmd.CommandText = @"
+SELECT FILE_NAME FROM DBA_DATA_FILES WHERE UPPER(TABLESPACE_NAME) = :ts
+UNION
+SELECT FILE_NAME FROM DBA_TEMP_FILES WHERE UPPER(TABLESPACE_NAME) = :ts";
+            fileCmd.Parameters.Add(new OracleParameter("ts", ts.ToUpperInvariant()));
+            using var fileReader = await fileCmd.ExecuteReaderAsync(ct);
+            while (await fileReader.ReadAsync(ct))
+            {
+                if (!fileReader.IsDBNull(0))
+                {
+                    string f = fileReader.GetString(0).Trim();
+                    if (!string.IsNullOrEmpty(f) && !datafiles.Contains(f, StringComparer.OrdinalIgnoreCase))
+                    {
+                        datafiles.Add(f);
+                    }
+                }
+            }
+            if (datafiles.Count > 0)
+            {
+                Log($"[DROP-TABLESPACE] Đã ghi nhận {datafiles.Count} datafile thuộc tablespace '{ts}': {string.Join(", ", datafiles)}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log($"[DROP-TABLESPACE] Cảnh báo khi lấy danh sách datafile của tablespace '{ts}': {ex.Message}");
+        }
+
+        // 4. Kiểm tra xem có User nào đang gắn với tablespace này không (Default tablespace, Temp tablespace, hoặc có segments/data)
         var remainingUsers = new List<string>();
         try
         {
@@ -703,14 +746,185 @@ SELECT DISTINCT USERNAME FROM (
             }
         }
 
-        // 4. Thực thi DROP TABLESPACE ... INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS
-        Report(92, $"[DROP-TABLESPACE] Đang thực thi DROP TABLESPACE \"{ts}\" INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS...");
+        // 5. Giải phóng File Handle của Oracle (đặc thù Windows OS locking): Checkpoint & đưa Tablespace về OFFLINE
+        Report(92, $"[DROP-TABLESPACE] Đang giải phóng File Handle: CHECKPOINT và đưa tablespace '{ts}' về OFFLINE...");
+        try
+        {
+            using var cpCmd = conn.CreateCommand();
+            cpCmd.CommandTimeout = 60;
+            cpCmd.CommandText = "ALTER SYSTEM CHECKPOINT";
+            await cpCmd.ExecuteNonQueryAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            Log($"[DROP-TABLESPACE] Lưu ý khi CHECKPOINT: {ex.Message}");
+        }
+
+        try
+        {
+            using var offCmd = conn.CreateCommand();
+            offCmd.CommandTimeout = 60;
+            offCmd.CommandText = $"ALTER TABLESPACE \"{ts}\" OFFLINE NORMAL";
+            await offCmd.ExecuteNonQueryAsync(ct);
+            Report(93, $"[DROP-TABLESPACE] Đã chuyển tablespace '{ts}' sang OFFLINE NORMAL (Đã đóng file handles).");
+        }
+        catch (Exception exNormal)
+        {
+            Log($"[DROP-TABLESPACE] OFFLINE NORMAL không thành công ({exNormal.Message}), đang thử OFFLINE IMMEDIATE...");
+            try
+            {
+                using var offImmCmd = conn.CreateCommand();
+                offImmCmd.CommandTimeout = 60;
+                offImmCmd.CommandText = $"ALTER TABLESPACE \"{ts}\" OFFLINE IMMEDIATE";
+                await offImmCmd.ExecuteNonQueryAsync(ct);
+                Report(93, $"[DROP-TABLESPACE] Đã chuyển tablespace '{ts}' sang OFFLINE IMMEDIATE.");
+            }
+            catch (Exception exImm)
+            {
+                Log($"[DROP-TABLESPACE] Không thể chuyển tablespace sang OFFLINE ({exImm.Message}). Tiếp tục thực thi DROP...");
+            }
+        }
+
+        // Chờ 1 giây để hệ điều hành Windows giải phóng hoàn toàn khóa tệp (file lock)
+        await Task.Delay(1000, ct);
+
+        // 6. Thực thi DROP TABLESPACE ... INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS
+        Report(94, $"[DROP-TABLESPACE] Đang thực thi DROP TABLESPACE \"{ts}\" INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS...");
         using (var dropCmd = conn.CreateCommand())
         {
             dropCmd.CommandTimeout = 300;
             dropCmd.CommandText = $"DROP TABLESPACE \"{ts}\" INCLUDING CONTENTS AND DATAFILES CASCADE CONSTRAINTS";
             await dropCmd.ExecuteNonQueryAsync(ct);
             Report(95, $"[DROP-TABLESPACE] ĐÃ XÓA THÀNH CÔNG Tablespace: '{ts}' (kèm Datafiles)");
+        }
+
+        // 7. Dọn dẹp vật lý các Datafile còn sót lại (nếu Windows OS hoặc Oracle Service chưa xóa hết)
+        if (datafiles.Count > 0)
+        {
+            Report(96, $"[CLEANUP-DATAFILES] Đang kiểm tra và dọn dẹp {datafiles.Count} file vật lý trên ổ đĩa...");
+            foreach (var df in datafiles)
+            {
+                ct.ThrowIfCancellationRequested();
+                await CleanUpPhysicalDatafileAsync(conn, df, ct);
+            }
+            Report(98, $"[CLEANUP-DATAFILES] Hoàn tất dọn dẹp datafile của tablespace '{ts}'.");
+        }
+    }
+
+    public async Task CleanUpPhysicalDatafileAsync(OracleConnection conn, string filePath, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) return;
+
+        string normalizedPath = NormalizeDatafilePath(filePath);
+
+        // 1. Nếu đường dẫn truy cập được từ ứng dụng (máy local hoặc UNC share)
+        try
+        {
+            if (File.Exists(normalizedPath))
+            {
+                Report(96, $"[CLEANUP-DATAFILES] Đang xóa file vật lý cục bộ: '{normalizedPath}'...");
+                File.Delete(normalizedPath);
+                if (!File.Exists(normalizedPath))
+                {
+                    Report(97, $"[CLEANUP-DATAFILES] ĐÃ XÓA FILE THÀNH CÔNG: '{normalizedPath}'");
+                    return;
+                }
+            }
+        }
+        catch (Exception exLocal)
+        {
+            Log($"[CLEANUP-DATAFILES] Thử xóa cục bộ file '{normalizedPath}' không thành công: {exLocal.Message}. Đang thử xóa qua Oracle Server...");
+        }
+
+        // 2. Thử xóa qua server Oracle bằng PL/SQL (UTL_FILE.FREMOVE thông qua Directory tạm thời)
+        try
+        {
+            string? dirPath = Path.GetDirectoryName(normalizedPath);
+            string fileName = Path.GetFileName(normalizedPath);
+
+            if (!string.IsNullOrEmpty(dirPath) && !string.IsNullOrEmpty(fileName))
+            {
+                string dirObjName = "WM_DIR_" + Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+                using var plsqlCmd = conn.CreateCommand();
+                plsqlCmd.CommandTimeout = 60;
+                plsqlCmd.CommandText = $@"
+DECLARE
+    v_dir VARCHAR2(30) := '{dirObjName}';
+    v_dir_path VARCHAR2(1000) := :dirPath;
+    v_file_name VARCHAR2(500) := :fileName;
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE OR REPLACE DIRECTORY ' || v_dir || ' AS ''' || REPLACE(v_dir_path, '''', '''''') || '''';
+    BEGIN
+        UTL_FILE.FREMOVE(v_dir, v_file_name);
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+    BEGIN
+        EXECUTE IMMEDIATE 'DROP DIRECTORY ' || v_dir;
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+EXCEPTION
+    WHEN OTHERS THEN
+        BEGIN
+            EXECUTE IMMEDIATE 'DROP DIRECTORY ' || v_dir;
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL;
+        END;
+END;";
+                plsqlCmd.Parameters.Add(new OracleParameter("dirPath", dirPath));
+                plsqlCmd.Parameters.Add(new OracleParameter("fileName", fileName));
+                await plsqlCmd.ExecuteNonQueryAsync(ct);
+            }
+        }
+        catch (Exception exPlsql)
+        {
+            Log($"[CLEANUP-DATAFILES] Lưu ý khi gọi UTL_FILE.FREMOVE trên server: {exPlsql.Message}");
+        }
+
+        // 3. Dự phòng qua DBMS_BACKUP_RESTORE.DELETEFILE (cho phép xóa OS file trên server bằng đường dẫn đầy đủ)
+        try
+        {
+            using var rmanCmd = conn.CreateCommand();
+            rmanCmd.CommandTimeout = 60;
+            rmanCmd.CommandText = @"
+BEGIN
+    SYS.DBMS_BACKUP_RESTORE.DELETEFILE(:filePath);
+EXCEPTION
+    WHEN OTHERS THEN
+        NULL;
+END;";
+            rmanCmd.Parameters.Add(new OracleParameter("filePath", normalizedPath));
+            await rmanCmd.ExecuteNonQueryAsync(ct);
+        }
+        catch (Exception exRman)
+        {
+            Log($"[CLEANUP-DATAFILES] Lưu ý khi gọi DBMS_BACKUP_RESTORE.DELETEFILE: {exRman.Message}");
+        }
+
+        // 4. Kiểm tra lại lần cuối nếu là file cục bộ
+        try
+        {
+            if (File.Exists(normalizedPath))
+            {
+                File.Delete(normalizedPath);
+            }
+
+            if (File.Exists(normalizedPath))
+            {
+                Report(97, $"[CLEANUP-DATAFILES] CẢNH BÁO: File '{normalizedPath}' vẫn còn tồn tại trên ổ đĩa.", isError: false);
+            }
+            else
+            {
+                Report(97, $"[CLEANUP-DATAFILES] Đã dọn dẹp datafile: '{normalizedPath}'");
+            }
+        }
+        catch
+        {
+            // Bỏ qua nếu là đường dẫn remote server không map được
         }
     }
 
